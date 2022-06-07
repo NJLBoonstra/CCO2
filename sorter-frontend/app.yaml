@@ -1,0 +1,5 @@
+runtime: nodejs16
+env: standard
+
+env_variables:
+  BUCKET_NAME: "cloudcomputing-bn.appspot.com"
