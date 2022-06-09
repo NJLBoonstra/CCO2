@@ -1,9 +1,53 @@
 <script lang="ts">
     import "../app.css"
 
-    function formSubmit(e: Event) {
-        console.log("nothing here yet...")
+    export let postURL: string;
+    export let postFields: {name: string, value:string}[];
+
+    let fileText: string;
+    let fileName: string;
+
+    let fileForm: HTMLFormElement;
+    let fileInput: HTMLInputElement;
+    let textArea: HTMLTextAreaElement;
+    // let fileNameElement: HTMLInputElement;
+
+    function resetForm(e: Event) {
+        // yeah
+        fileInput.value = "";
+        fileInput.disabled = false;
+        
+        textArea.value = "";
+        textArea.disabled = false;
+
+        // fileNameElement.value = "";
+        // fileNameElement.disabled = false;
     }
+
+    function onChange(e: Event) {
+        console.log("onChange called.");
+        switch (e.target) {
+            case fileInput:
+                let v: boolean = true;
+                if (fileInput.files?.[0])
+                    v = false;
+
+                textArea.disabled = v;
+                fileName = fileInput.files?.[0].name ?? "unnamed";
+
+                break;
+            case textArea:
+                if (textArea.value === "")
+                    fileInput.disabled = false;
+                else
+                    fileInput.disabled = true;
+                break;
+            default:
+                break;
+        }
+    }
+
+
 </script>
 
 <svelte:head>
@@ -12,12 +56,26 @@
 
 <div>
     <p>Select a file to upload, or use the textbox to upload raw text (for debugging)</p>
-    <form on:submit|preventDefault={formSubmit}>
+    <form method="POST" bind:this={fileForm} action={postURL} enctype="multipart/form-data">
+        {#each postFields as {name, value}}
+            {#if name === "x-goog-meta-original-filename"}
+                <input type="hidden" bind:value={fileName} name={name}>
+            {:else}
+                <input type="hidden" name={name} value={value}>
+            {/if}
+        {/each}
+
         <div>
-            <input type="file" multiple>
-            <textarea placeholder="Insert text here..."></textarea>
+            <input type="file" name="file" on:change={onChange} bind:this={fileInput} accept=".txt,text/plain">
+            <div>
+                <!-- <label>Filename: <input type="text" bind:this={fileNameElement} bind:value={fileName} on:keyup={onChange}>.txt</label> -->
+                <textarea bind:value={fileText} on:keyup={onChange} bind:this={textArea} placeholder="Insert text here..."></textarea>
+            </div>
         </div>
-        <input type="submit" value="Upload">
+        <div>
+            <input type="button" value="Reset" on:click={resetForm} >
+            <input class="biggerflex" type="submit" value="Upload">
+        </div>
     </form>
 </div>
 
@@ -63,5 +121,8 @@
         opacity: 100%;
         outline: none;
         background-color: (--pure-white);
+    }
+    .biggerflex {
+        flex: 2 1 0;
     }
 </style>
