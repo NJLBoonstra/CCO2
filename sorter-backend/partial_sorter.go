@@ -26,6 +26,8 @@ func partialSort(ctx context.Context, m PubSubMessage) error {
 
 	// read from cloud storage
 	partialString := make([]byte, chunkSize+margin)
+	extPartialString := make([]byte, margin)
+	overRead := 0
 	client, err := storage.NewClient(ctx)
 	if err != nil {
 		// TODO: Handle error.
@@ -43,6 +45,12 @@ func partialSort(ctx context.Context, m PubSubMessage) error {
 	str := string(partialString)
 	firstNL := strings.Index(str, "\n")
 	lastNL := strings.Index(str[chunkSize:], "\n")
+	for lastNL == -1 {
+		overRead++
+		n, err := r.ReadAt(extPartialString, chunkSize*chunkIndex+margin)
+		str += string(extPartialString)
+		lastNL = strings.Index(str[chunkSize+margin*overRead:], "\n")
+	}
 	cut_str := str[firstNL:lastNL]
 
 	// split
