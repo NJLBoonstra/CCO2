@@ -1,4 +1,4 @@
-package main
+package sorter_backend
 
 import (
 	"context"
@@ -9,11 +9,6 @@ import (
 
 	"cloud.google.com/go/storage"
 )
-
-type PubSubMessage struct {
-	Attributes map[string]string `json: "attributes"`
-	MessageId  string            `json: "messageId"`
-}
 
 func partialSort(ctx context.Context, m PubSubMessage) error {
 	// read pubsub
