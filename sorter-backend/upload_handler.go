@@ -2,6 +2,7 @@ package sorter_backend
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"math"
 	"os"
@@ -100,13 +101,19 @@ func HandleUpload(ctx context.Context, e GCSEvent) {
 		SubState: chunkStatus,
 	}
 
+	js, _ := json.Marshal(j)
+
 	_, err = fbClient.Collection("jobs").Doc(j.ID).Set(ctx, j)
 
+	// Publish tasks for each chunk
 	for i, _ := range chunkStatus {
 		task := &pubsub.Message{
 			Attributes: map[string]string{
-				"job-id":   j.ID,
-				"chunkIdx": strconv.Itoa(i)},
+				"jobID":    j.ID,
+				"chunkIdx": strconv.Itoa(i),
+				"bucket":   bucketName,
+			},
+			Data: js,
 		}
 
 		result := psClient.Topic("jobs").Publish(ctx, task)

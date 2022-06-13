@@ -12,7 +12,7 @@ import (
 
 func partialSort(ctx context.Context, m PubSubMessage) error {
 	// read pubsub
-	chunkIndex, err := strconv.Atoi(m.Attributes["index"])
+	chunkIndex, err := strconv.Atoi(m.Attributes["chunkIdx"])
 	chunkSize, err := strconv.Atoi(m.Attributes["chunksize"])
 	margin, err := strconv.Atoi(m.Attributes["margin"])
 	if err != nil {

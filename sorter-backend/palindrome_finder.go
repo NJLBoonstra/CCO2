@@ -3,15 +3,23 @@ package sorter_backend
 import (
 	"context"
 	"log"
-	"time"
+	"strconv"
 
 	"cloud.google.com/go/storage"
 )
 
+func FindPalindromes(ctx context.Context, m PubSubMessage) {
+	fileName := m.Attributes["jobID"]
+	bucketName := m.Attributes["bucketName"]
+	chunkIdx, err := strconv.Atoi(m.Attributes["chunkIdx"])
+	if err != nil {
+		log.Fatalf("Could not convert the chunkIdx to an int: %v", err)
+	}
 
-func FindPalindromes(ctx context.Context, e GCSEvent) {
-	filename := e.Name
-	bucket := e.Bucket
+	// Currently, the palindrome implementation only runs for the whole file
+	if chunkIdx > 0 {
+		return
+	}
 
 	client, err := storage.NewClient(ctx)
 
@@ -20,8 +28,8 @@ func FindPalindromes(ctx context.Context, e GCSEvent) {
 		return
 	}
 
-	bkt := client.Bucket(bucket)
-	obj := bkt.Object(filename)
+	bkt := client.Bucket(bucketName)
+	obj := bkt.Object(fileName)
 	attrs, err := obj.Attrs(ctx)
 
 	if err != nil {
