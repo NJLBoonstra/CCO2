@@ -11,11 +11,12 @@ const (
 	Failed
 )
 
-type Job struct (
-	ID			string		`json:"id"`
-	State		JobState	`json:"State"`
-	SubState	[]JobState	`json:"SubState"`
-)
+type Job struct {
+	ID              string     `json:"id"`
+	State           JobState   `json:"State"`
+	sortState       []JobState `json:"sortState"`
+	palindromeState []JobState `json:"palindromeState"`
+}
 
 type PubSubMessage struct {
 	Attributes map[string]string `json: "attributes"`

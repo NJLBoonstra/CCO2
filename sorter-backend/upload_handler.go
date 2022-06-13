@@ -96,14 +96,16 @@ func HandleUpload(ctx context.Context, e GCSEvent) {
 	}
 
 	j := &Job{
-		ID:       jobUUID.String(),
-		State:    Created,
-		SubState: chunkStatus,
+		ID:              jobUUID.String(),
+		State:           Created,
+		sortState:       chunkStatus,
+		palindromeState: chunkStatus,
 	}
 
 	js, _ := json.Marshal(j)
 
 	_, err = fbClient.Collection("jobs").Doc(j.ID).Set(ctx, j)
+	// Todo: handle error
 
 	// Publish tasks for each chunk
 	for i, _ := range chunkStatus {
@@ -116,14 +118,19 @@ func HandleUpload(ctx context.Context, e GCSEvent) {
 			Data: js,
 		}
 
-		result := psClient.Topic("jobs").Publish(ctx, task)
-
-		msgId, err := result.Get(ctx)
-		if err != nil {
-			log.Fatalf("Could not publish message: %v", err)
+		results := []pubsub.PublishResult{
+			*psClient.Topic("sortJobs").Publish(ctx, task),
+			*psClient.Topic("palindromeJobs").Publish(ctx, task),
 		}
 
-		log.Printf("Chunk %v, published message: %v", i, msgId)
+		for _, r := range results {
+			msgId, err := r.Get(ctx)
+			if err != nil {
+				log.Fatalf("Could not publish message: %v", err)
+			}
+
+			log.Printf("Chunk %v, published message: %v", i, msgId)
+		}
 
 	}
 }

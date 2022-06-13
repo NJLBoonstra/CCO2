@@ -46,7 +46,7 @@ func FindPalindromes(ctx context.Context, m PubSubMessage) {
 
 	buffer := make([]byte, obj_size)
 
-	bytes_read, err := reader.Read(buffer)
+	_, err = reader.Read(buffer)
 
 	if err != nil {
 		log.Printf("Could not read file: %v", err)
