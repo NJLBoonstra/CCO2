@@ -2,7 +2,11 @@ module sorter
 
 go 1.18
 
-require cloud.google.com/go/storage v1.22.1
+require (
+	cloud.google.com/go/firestore v1.6.1
+	cloud.google.com/go/pubsub v1.3.1
+	cloud.google.com/go/storage v1.22.1
+)
 
 require (
 	cloud.google.com/go v0.100.2 // indirect
@@ -17,6 +21,7 @@ require (
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/net v0.0.0-20220325170049-de3da57026de // indirect
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20220328115105-d36c6a25d886 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20220411194840-2f41105eb62f // indirect
