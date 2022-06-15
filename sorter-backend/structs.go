@@ -13,9 +13,10 @@ const (
 
 type Job struct {
 	ID              string     `json:"id"`
-	State           JobState   `json:"State"`
-	sortState       []JobState `json:"sortState"`
-	palindromeState []JobState `json:"palindromeState"`
+	State           JobState   `json:"state"`
+	SortState       []JobState `json:"sortState"`
+	PalindromeState []JobState `json:"palindromeState"`
+	Error           string     `json:"error,omitempty"`
 }
 
 type PubSubMessage struct {

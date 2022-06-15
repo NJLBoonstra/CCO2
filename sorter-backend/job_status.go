@@ -38,19 +38,24 @@ func init() {
 	}
 }
 
-func GetJob(jobID string) (j *Job, err error) {
+func GetJob(jobID string) Job {
 	data, err := fbClient.Collection("jobs").Doc(jobID).Get(context.Background())
 
+	job := Job{}
+
 	if err != nil {
-		return nil, err
+		job.Error = err.Error()
+
+		return job
 	}
 
-	err = data.DataTo(&j)
+	err = data.DataTo(job)
 	if err != nil {
-		return nil, err
+		job.Error = err.Error()
+		return job
 	}
 
-	return j, err
+	return job
 }
 
 func JobRequest(w http.ResponseWriter, r *http.Request) {
@@ -63,17 +68,7 @@ func JobRequest(w http.ResponseWriter, r *http.Request) {
 	reqURL := strings.Split(r.URL.Path, "/")
 	jobID := reqURL[len(reqURL)-1]
 
-	if jobID == "" {
-		// Generate new UUID?
-		http.Error(w, "Please supply a job ID!", http.StatusBadRequest)
-		return
-	}
-
-	j, err := GetJob(jobID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	j := GetJob(jobID)
 
 	js, err := json.Marshal(j)
 	if err != nil {

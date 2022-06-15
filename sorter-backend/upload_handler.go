@@ -79,8 +79,8 @@ func HandleUpload(ctx context.Context, e GCSEvent) {
 	j := &Job{
 		ID:              jobUUID.String(),
 		State:           Created,
-		sortState:       chunkStatus,
-		palindromeState: chunkStatus,
+		SortState:       chunkStatus,
+		PalindromeState: chunkStatus,
 	}
 
 	js, _ := json.Marshal(j)

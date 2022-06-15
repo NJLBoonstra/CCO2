@@ -1,33 +1,26 @@
 <script lang="ts">
     import { page } from "$app/stores";
-    export let chunks: boolean[];
-    export let error: string;
+    import { jobStateToString, type Job } from "$lib/googlecloud";
 
-    console.log(chunks);
-    console.log(error);
+    export let jobStatus: Job;
+
+    console.log(jobStatus);
 </script>
 
-{#if error}
-    We encountered the following error: {error}!
-{/if}
-
-<div>
-    {#if chunks?.length < 1}
-        <p>Job with ID {$page.params.id} not found...</p>
-    {:else}
+{#if jobStatus.error }
+    We encountered the following error: {jobStatus.error}!
+{:else}
+    <div>
         <p>Chunk status for job '{$page.params.id}':</p>
-        {#each chunks as chunk, id}
+        {#each jobStatus.sortState as chunk, id}
             <div>
                 <p>Chunk #{id}</p>
-                {#if chunk}
-                <p>Done</p>
-                {:else}
-                <p>Waiting...<p>
-                {/if}
+                <p>{jobStateToString(chunk)}</p>
             </div>
         {/each}
-    {/if}
-</div>
+    </div>
+{/if}
+
 
 <style>
     div {

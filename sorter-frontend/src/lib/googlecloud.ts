@@ -5,6 +5,22 @@ import mysql, { type Query } from "promise-mysql"
 const storage: Storage = new Storage();
 const bucketName: string = process.env.BUCKET_NAME ?? "cco";
 const appOrigin: string = process.env.APP_ORIGIN ?? "https://cloudcomputing-bn.appspot.com"
+const urlAPI: string = process.env.URL_API ?? "";
+
+enum JobState {
+    Created,
+    Running,
+    Completed,
+    Failed
+};
+
+export type Job = {
+	ID: string,
+	State: JobState,
+	sortState: JobState[],
+	palindromeState: JobState[],
+    error?: string,
+};
 
 const findUUIDQuery = (uuid: string) => {
     const uuid_str: string = mysql.escape(uuid, true);   
@@ -26,6 +42,21 @@ const dbConnection = async () => {
     })
 };
 
+export function jobStateToString(js: JobState) {
+    switch (js) {
+        case JobState.Created:
+            return "Created";
+        case JobState.Running:
+            return "Running";
+        case JobState.Completed:
+            return "Completed";
+        case JobState.Failed:
+            return "Failed";
+        default:
+            return "???";
+    }
+}
+
 export async function uuidExists(uuid: string) {
     const db: mysql.Pool = await dbConnection();
 
@@ -41,6 +72,14 @@ export async function generateJobName() {
     //     newUuid = uuid();
 
     return newUuid;
+}
+
+export async function getJobStatus(jobID: string): Promise<Job> {
+    const reqURL: URL = new URL(jobID, urlAPI);
+
+    const response: Response = await fetch(reqURL.href);
+    
+    return (await response.json()) as Job;
 }
 
 export async function generateSignedUploadUrl(filename: string): Promise<[string, {name: string, value: string}[]]> {
