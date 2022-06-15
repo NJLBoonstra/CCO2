@@ -16,33 +16,44 @@ import (
 
 // var psClient *pubsub.Client
 // var fbClient *firestore.Client
-// var chunkSize int
+var sClient *storage.Client
+var chunkSize int
 
-// func init() {
-// 	var err error
+func init() {
+	var err error
 
-// 	ctx := context.Background()
+	ctx := context.Background()
 
-// 	project, exists := os.LookupEnv("GOOGLE_CLOUD_PROJECT")
-// 	if !exists {
-// 		log.Fatalf("Please set GOOGLE_CLOUD_PROJECT")
-// 	}
+	project, exists := os.LookupEnv("GOOGLE_CLOUD_PROJECT")
+	if !exists {
+		log.Fatalf("Please set GOOGLE_CLOUD_PROJECT")
+	}
 
-// 	chunkSize, exists := os.LookupEnv("CHUNK_SIZE")
-// 	if !exists {
-// 		log.Fatalf("Please set CHUNk_SIZE")
-// 	}
+	chunkSizeStr, exists := os.LookupEnv("CHUNK_SIZE")
+	if !exists {
+		log.Fatalf("Please set CHUNk_SIZE")
+	}
 
-// 	psClient, err := pubsub.NewClient(ctx, project)
-// 	if err != nil {
-// 		log.Fatalf("Cannot create Pub/Sub client: %v", err)
-// 	}
+	chunkSize, err = strconv.Atoi(chunkSizeStr)
+	if err != nil {
+		log.Fatalf("Could not convert chunkSize: %v", err)
+	}
 
-// 	fbClient, err := firestore.NewClient(ctx, project)
-// 	if err != nil {
-// 		log.Fatalf("Cannot create Firestore client: %v", err)
-// 	}
-// }
+	psClient, err = pubsub.NewClient(ctx, project)
+	if err != nil {
+		log.Fatalf("Cannot create Pub/Sub client: %v", err)
+	}
+
+	fbClient, err = firestore.NewClient(ctx, project)
+	if err != nil {
+		log.Fatalf("Cannot create Firestore client: %v", err)
+	}
+
+	sClient, err = storage.NewClient(ctx)
+	if err != nil {
+		log.Fatalf("Cannot create a Storage Client: %v", err)
+	}
+}
 
 func HandleUpload(ctx context.Context, e GCSEvent) {
 	fileName := e.Name
@@ -51,36 +62,6 @@ func HandleUpload(ctx context.Context, e GCSEvent) {
 	jobUUID, err := uuid.Parse(fileName)
 	if err != nil {
 		log.Fatalf("Could not parse provided uuid: %v", err)
-	}
-
-	chunkSizeStr, exists := os.LookupEnv("CHUNK_SIZE")
-	if !exists {
-		log.Fatalf("Please define CHUNK_SIZE")
-	}
-
-	project, exists := os.LookupEnv("GOOGLE_CLOUD_PROJECT")
-	if !exists {
-		log.Fatalf("Please set GOOGLE_CLOUD_PROJECT")
-	}
-
-	chunkSize, err := strconv.Atoi(chunkSizeStr)
-	if err != nil {
-		log.Fatalf("Could not convert CHUNK_SIZE to int: ", err)
-	}
-
-	sClient, err := storage.NewClient(ctx)
-	if err != nil {
-		log.Fatalf("Cannot create a Storage Client: %v", err)
-	}
-
-	psClient, err := pubsub.NewClient(ctx, project)
-	if err != nil {
-		log.Fatalf("Cannot create Pub/Sub client: %v", err)
-	}
-
-	fbClient, err := firestore.NewClient(ctx, project)
-	if err != nil {
-		log.Fatalf("Cannot create Firestore client: %v", err)
 	}
 
 	obj := sClient.Bucket(bucketName).Object(fileName)
