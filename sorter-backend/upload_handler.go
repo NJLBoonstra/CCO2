@@ -55,19 +55,21 @@ func init() {
 	}
 }
 
-func HandleUpload(ctx context.Context, e GCSEvent) {
+func HandleUpload(ctx context.Context, e GCSEvent) error {
 	fileName := e.Name
 	bucketName := e.Bucket
 
 	jobUUID, err := uuid.Parse(fileName)
 	if err != nil {
-		log.Fatalf("Could not parse provided uuid: %v", err)
+		log.Printf("Could not parse provided uuid: %v", err)
+		return err
 	}
 
 	obj := sClient.Bucket(bucketName).Object(fileName)
 	objAttr, err := obj.Attrs(ctx)
 	if err != nil {
-		log.Fatalf("Could not get object attrs: %v", err)
+		log.Printf("Could not get object attrs: %v", err)
+		return err
 	}
 
 	chunks := int(math.Ceil(float64(objAttr.Size) / float64(chunkSize)))
@@ -107,11 +109,13 @@ func HandleUpload(ctx context.Context, e GCSEvent) {
 		for _, r := range results {
 			msgId, err := r.Get(ctx)
 			if err != nil {
-				log.Fatalf("Could not publish message: %v", err)
+				log.Printf("Could not publish message: %v", err)
+				return err
 			}
 
 			log.Printf("Chunk %v, published message: %v", i, msgId)
 		}
 
 	}
+	return nil
 }

@@ -1,10 +1,9 @@
 <script lang="ts">
+    import "../../app.css"
     import { page } from "$app/stores";
     import { jobStateToString, type Job } from "$lib/googlecloud";
 
     export let jobStatus: Job;
-
-    console.log(jobStatus);
 </script>
 
 {#if jobStatus.error }

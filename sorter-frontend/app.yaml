@@ -2,4 +2,6 @@ runtime: nodejs16
 env: standard
 
 env_variables:
-  BUCKET_NAME: "cloudcomputing-bn.appspot.com"
+  BUCKET_NAME: "boonstra-nieuwenhuijzen.appspot.com"
+  CHUNK_SIZE: "33554432"
+  URL_API: "https://europe-west1-boonstra-nieuwenhuijzen.cloudfunctions.net/JobRequest"

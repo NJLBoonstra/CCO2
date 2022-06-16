@@ -1,5 +1,5 @@
 import { Storage, type GenerateSignedPostPolicyV4Options, type GetSignedUrlConfig, type PolicyFields} from "@google-cloud/storage";
-import {v4 as uuid } from "uuid";
+import {stringify, v4 as uuid } from "uuid";
 import mysql, { type Query } from "promise-mysql"
 
 const storage: Storage = new Storage();
@@ -78,8 +78,30 @@ export async function getJobStatus(jobID: string): Promise<Job> {
     const reqURL: URL = new URL(jobID, urlAPI);
 
     const response: Response = await fetch(reqURL.href);
+
+    let data: Job | null;
+
+    try{
+        data = await response.json() as Job;
+    }
+    catch (e) {
+        let message: string;
+        if (e instanceof Error) {
+            message = e.message;
+        } else {
+            message = String(e)
+        }
+
+        data = {
+            ID: "",
+            State: JobState.Failed,
+            sortState: [JobState.Failed],
+            palindromeState: [JobState.Failed],
+            error: message,
+        };        
+    }
     
-    return (await response.json()) as Job;
+    return data;
 }
 
 // export async function generateSignedDownloadUrl(jobID: string) {
@@ -104,8 +126,6 @@ export async function generateSignedUploadUrl(filename: string): Promise<[string
                     .generateSignedPostPolicyV4(options);
 
     let responseFields: {name: string, value: string}[] = [];
-
-    console.log(response.fields)
 
     for (const n of Object.keys(response.fields)) {
         responseFields.push({name: n, value: response.fields[n]});
