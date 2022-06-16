@@ -8,7 +8,7 @@ export async function get() {
     [postURL, postFields] = await generateSignedUploadUrl(jobName);
    
     return {
-      body: { jobName, postURL, postFields }
+      body: { postURL, postFields }
     };
 }
 

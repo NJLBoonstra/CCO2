@@ -14,7 +14,6 @@
 
     function resetForm(e: Event) {
         // yeah
-        debugger;
         fileInput.value = "";
         fileInput.disabled = false;
         
