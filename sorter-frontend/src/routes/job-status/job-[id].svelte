@@ -1,7 +1,7 @@
 <script lang="ts">
     import "../../app.css"
     import { page } from "$app/stores";
-    import { JobState, jobStateToString, type Job } from "$lib/googlecloud";
+    import { JobState, jobStateToString, type Job } from "$lib/job";
 
     export let jobStatus: Job;
     let statii: JobState[][];

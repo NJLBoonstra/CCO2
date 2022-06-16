@@ -1,68 +1,19 @@
-import { Storage, type GenerateSignedPostPolicyV4Options, type GetSignedUrlConfig, type PolicyFields} from "@google-cloud/storage";
+import * as gcs from "@google-cloud/storage";
+import { browser } from "$app/env";
 import {stringify, v4 as uuid } from "uuid";
-import mysql, { type Query } from "promise-mysql"
+import type { Job } from "./job";
 
+
+const storage: gcs.Storage = new gcs.Storage();
 const bucketName: string = process.env.BUCKET_NAME ?? "cco";
 const appOrigin: string = process.env.APP_ORIGIN ?? "https://cloudcomputing-bn.appspot.com"
 const urlAPI: string = process.env.URL_API ?? "";
 
-export enum JobState {
-    Created,
-    Running,
-    Completed,
-    Failed
-};
+// async function uuidExists(uuid: string) {
+//     const obj: gcs.File = storage.bucket(bucketName).file(uuid);
 
-export type Job = {
-	ID?: string,
-	State?: JobState,
-	sortState?: JobState[],
-	palindromeState?: JobState[],
-    error?: string,
-};
-
-const findUUIDQuery = (uuid: string) => {
-    const uuid_str: string = mysql.escape(uuid, true);   
-
-    return `SELECT * FROM jobs WHERE uuid = $(uuid_str);`;
-};
-
-
-const dbConnection = async () => {
-    const dbAddr: string[] | undefined = process.env.DB_USER?.split(":");
-
-
-    return mysql.createPool({
-        user: process.env.DB_USE ?? "dev",
-        password: process.env.DB_PASSWORD ?? "",
-        database: process.env.DB_NAME ?? "cco",
-        host: (dbAddr?.[0]) ?? "127.0.0.1",
-        port: parseInt(dbAddr?.[1] ?? "3306"),
-    })
-};
-
-export function jobStateToString(js: JobState) {
-    switch (js) {
-        case JobState.Created:
-            return "Created";
-        case JobState.Running:
-            return "Running";
-        case JobState.Completed:
-            return "Completed";
-        case JobState.Failed:
-            return "Failed";
-        default:
-            return "???";
-    }
-}
-
-export async function uuidExists(uuid: string) {
-    const db: mysql.Pool = await dbConnection();
-
-    let result = await db.query<any[]>(findUUIDQuery(uuid));
-
-    return result.length > 0;
-}
+//     return await obj.exists();
+// }
 
 export async function generateJobName() {
     let newUuid: string = uuid();
@@ -77,7 +28,6 @@ export async function getJobStatus(jobID: string): Promise<Job> {
     const reqURL: URL = new URL(urlAPI + "/" + jobID)
 
     const response: Response = await fetch(reqURL.href);
-
     let data: Job;
 
     if (response.status === 200) {
@@ -112,7 +62,7 @@ export async function getJobStatus(jobID: string): Promise<Job> {
 
 export async function generateSignedUploadUrl(filename: string): Promise<[string, {name: string, value: string}[]]> {
     const redirectURL: string = appOrigin + "/upload-" + filename;
-    const options: GenerateSignedPostPolicyV4Options = {
+    const options: gcs.GenerateSignedPostPolicyV4Options = {
         expires: Date.now() + 15 * 60 * 1000,
         fields: {
             // "x-goog-meta-original-filename": "",
@@ -124,7 +74,6 @@ export async function generateSignedUploadUrl(filename: string): Promise<[string
         ]
     }
 
-    const storage: Storage = new Storage();
     const [response] = await storage.bucket(bucketName).file(filename)
                     .generateSignedPostPolicyV4(options);
 
