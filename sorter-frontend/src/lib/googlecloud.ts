@@ -82,6 +82,10 @@ export async function getJobStatus(jobID: string): Promise<Job> {
     return (await response.json()) as Job;
 }
 
+// export async function generateSignedDownloadUrl(jobID: string) {
+
+// }
+
 export async function generateSignedUploadUrl(filename: string): Promise<[string, {name: string, value: string}[]]> {
     const redirectURL: string = appOrigin + "/upload-" + filename;
     const options: GenerateSignedPostPolicyV4Options = {

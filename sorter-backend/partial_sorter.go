@@ -3,6 +3,8 @@ package sorter_backend
 import (
 	"context"
 	"io"
+	"log"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -11,9 +13,16 @@ import (
 )
 
 func partialSort(ctx context.Context, m PubSubMessage) error {
+	chunkSizeStr, exists := os.LookupEnv("CHUNK_SIZE")
+	if !exists {
+		log.Fatal("Make sure CHUNK_SIZE is set!")
+	}
+	chunkSize, err := strconv.Atoi(chunkSizeStr)
+	if err != nil {
+		log.Fatalf("Could not convert CHUNK_SIZE to int: %v", err)
+	}
 	// read pubsub
 	chunkIndex, err := strconv.Atoi(m.Attributes["chunkIdx"])
-	chunkSize, err := strconv.Atoi(m.Attributes["chunksize"])
 	margin, err := strconv.Atoi(m.Attributes["margin"])
 	if err != nil {
 		// TODO: Handle error.
