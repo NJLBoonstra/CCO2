@@ -10,6 +10,8 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"cloud.google.com/go/pubsub"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var psClient *pubsub.Client
@@ -42,6 +44,11 @@ func GetJob(jobID string) Job {
 	data, err := fbClient.Collection("jobs").Doc(jobID).Get(context.Background())
 
 	job := Job{}
+
+	if err != nil && status.Code(err) == codes.NotFound {
+		job.Error = "Job with ID '" + jobID + "' not found!"
+		return job
+	}
 
 	if err != nil {
 		job.Error = err.Error()
