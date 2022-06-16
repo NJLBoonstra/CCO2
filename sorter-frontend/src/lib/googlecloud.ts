@@ -2,12 +2,14 @@ import * as gcs from "@google-cloud/storage";
 import { browser } from "$app/env";
 import {stringify, v4 as uuid } from "uuid";
 import type { Job } from "./job";
+import { GoogleAuth, IdTokenClient } from "google-auth-library";
 
 
 const storage: gcs.Storage = new gcs.Storage();
 const bucketName: string = process.env.BUCKET_NAME ?? "cco";
 const appOrigin: string = process.env.APP_ORIGIN ?? "https://cloudcomputing-bn.appspot.com"
 const urlAPI: string = process.env.URL_API ?? "";
+const auth = new GoogleAuth();
 
 // async function uuidExists(uuid: string) {
 //     const obj: gcs.File = storage.bucket(bucketName).file(uuid);
@@ -26,12 +28,13 @@ export async function generateJobName() {
 
 export async function getJobStatus(jobID: string): Promise<Job> {
     const reqURL: URL = new URL(urlAPI + "/" + jobID)
+    const authReq: IdTokenClient = await auth.getIdTokenClient(urlAPI);
 
-    const response: Response = await fetch(reqURL.href);
+    const response = await authReq.request<Job>({url: reqURL.href});
     let data: Job;
-
+    
     if (response.status === 200) {
-        data = await response.json() as Job;
+        data = response.data;
     }
     else
         data = {

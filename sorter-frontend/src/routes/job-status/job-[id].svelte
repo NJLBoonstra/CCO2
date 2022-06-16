@@ -6,13 +6,13 @@
     export let jobStatus: Job;
     let statii: JobState[][];
 
-    if (jobStatus.palindromeState && jobStatus.sortState) {
-        statii = jobStatus.sortState.map((v, i) => {
-            if (i < jobStatus.palindromeState!.length)
-                return [v, jobStatus.palindromeState![i]]
-            return [v, JobState.Completed]
-        });
-    }
+    // if (jobStatus.palindromeState && jobStatus.sortState) {
+    //     statii = jobStatus.sortState.map((v, i) => {
+    //         if (i < jobStatus.palindromeState!.length)
+    //             return [v, jobStatus.palindromeState![i]]
+    //         return [v, JobState.Completed]
+    //     });
+    // }
 </script>
 
 {#if jobStatus.error }
