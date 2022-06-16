@@ -2,12 +2,11 @@ import { Storage, type GenerateSignedPostPolicyV4Options, type GetSignedUrlConfi
 import {stringify, v4 as uuid } from "uuid";
 import mysql, { type Query } from "promise-mysql"
 
-const storage: Storage = new Storage();
 const bucketName: string = process.env.BUCKET_NAME ?? "cco";
 const appOrigin: string = process.env.APP_ORIGIN ?? "https://cloudcomputing-bn.appspot.com"
 const urlAPI: string = process.env.URL_API ?? "";
 
-enum JobState {
+export enum JobState {
     Created,
     Running,
     Completed,
@@ -15,10 +14,10 @@ enum JobState {
 };
 
 export type Job = {
-	ID: string,
-	State: JobState,
-	sortState: JobState[],
-	palindromeState: JobState[],
+	ID?: string,
+	State?: JobState,
+	sortState?: JobState[],
+	palindromeState?: JobState[],
     error?: string,
 };
 
@@ -75,32 +74,35 @@ export async function generateJobName() {
 }
 
 export async function getJobStatus(jobID: string): Promise<Job> {
-    const reqURL: URL = new URL(jobID, urlAPI);
+    const reqURL: URL = new URL(urlAPI + "/" + jobID)
 
     const response: Response = await fetch(reqURL.href);
 
-    let data: Job | null;
+    let data: Job;
 
-    try{
+    if (response.status === 200) {
         data = await response.json() as Job;
     }
-    catch (e) {
-        let message: string;
-        if (e instanceof Error) {
-            message = e.message;
-        } else {
-            message = String(e)
+    else
+        data = {
+            error: "Cloud Function returned non-200 code",
         }
 
-        data = {
-            ID: "",
-            State: JobState.Failed,
-            sortState: [JobState.Failed],
-            palindromeState: [JobState.Failed],
-            error: message,
-        };        
-    }
-    
+
+    // try{
+    // }
+    // catch (e) {
+    //     let message: string;
+    //     if (e instanceof Error) {
+    //         message = e.message;
+    //     } else {
+    //         message = String(e)
+    //     }
+
+    //     data = {
+    //         error: message,
+    //     };        
+    // }
     return data;
 }
 
@@ -122,6 +124,7 @@ export async function generateSignedUploadUrl(filename: string): Promise<[string
         ]
     }
 
+    const storage: Storage = new Storage();
     const [response] = await storage.bucket(bucketName).file(filename)
                     .generateSignedPostPolicyV4(options);
 
