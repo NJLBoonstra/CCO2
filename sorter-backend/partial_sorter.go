@@ -37,7 +37,7 @@ func partialSort(ctx context.Context, m PubSubMessage) error {
 	// 	// TODO: Handle error.
 	// }
 
-	bkt := client.Bucket("test")
+	bkt := client.Bucket("boonstra-nieuwenhuijzen.appspot.com")
 	obj := bkt.Object(m.Attributes["object"])
 	r, _ := obj.NewRangeReader(ctx, int64(chunkSize)*int64(chunkIndex), int64(chunkSize)+int64(margin))
 	// if err != nil {
