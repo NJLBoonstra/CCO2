@@ -41,7 +41,7 @@ func PartialSort(ctx context.Context, m PubSubMessage) error {
 		log.Fatal("Client could not be created", err)
 	}
 
-	bkt := client.Bucket("boonstra-nieuwenhuijzen.appspot.com")
+	bkt := client.Bucket(bucketName)
 
 	obj := bkt.Object(fileName)
 	r, err := obj.NewRangeReader(ctx, int64(chunkSize)*int64(chunkIndex), int64(chunkSize)+int64(margin))
@@ -59,10 +59,13 @@ func PartialSort(ctx context.Context, m PubSubMessage) error {
 	lastNL := strings.Index(str[chunkSize:], "\n")
 	for lastNL == -1 {
 		overRead++
-		r, err = obj.NewRangeReader(ctx, int64(chunkSize)*int64(chunkIndex)+int64(margin), int64(chunkSize))
+		r, err = obj.NewRangeReader(ctx, int64(chunkSize)*int64(chunkIndex)+int64(margin), int64(margin))
+		if err != nil {
+			log.Fatalf("Could not create a NewRangeReader: %v", err)
+		}
 		_, err = r.Read(extPartialString)
 		if err != nil {
-			log.Fatal("Reading obj in iteration failed", err)
+			log.Fatalf("Reading obj in iteration failed %v", err)
 		}
 		str += string(extPartialString)
 		lastNL = strings.Index(str[chunkSize+margin*overRead:], "\n")

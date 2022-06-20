@@ -1,4 +1,4 @@
-package sorter_backend
+package sorter_find_palindromes
 
 import (
 	"context"

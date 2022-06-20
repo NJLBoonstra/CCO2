@@ -1,4 +1,4 @@
-package sorter_backend
+package sorter_job_request
 
 import (
 	"context"
@@ -13,6 +13,23 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+type JobState int
+
+const (
+	Created JobState = iota
+	Running
+	Completed
+	Failed
+)
+
+type Job struct {
+	ID              string     `json:"id"`
+	State           JobState   `json:"state"`
+	SortState       []JobState `json:"sortState"`
+	PalindromeState []JobState `json:"palindromeState"`
+	Error           string     `json:"error,omitempty"`
+}
 
 var psClient *pubsub.Client
 var fbClient *firestore.Client
@@ -38,9 +55,12 @@ func init() {
 	if err != nil {
 		log.Fatalf("Cannot create a Firestore client: %v", err)
 	}
+
+	log.Printf("ps %v fb %v", psClient, fbClient)
 }
 
 func GetJob(jobID string) Job {
+	log.Printf("fb %v", fbClient)
 	data, err := fbClient.Collection("jobs").Doc(jobID).Get(context.Background())
 
 	job := Job{}
