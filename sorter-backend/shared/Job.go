@@ -7,26 +7,45 @@ import (
 	"time"
 
 	"cloud.google.com/go/firestore"
+	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-type JobState int
+type WorkerState int
+type WorkerType int
+
+const CollectionJobName string = "jobs"
+
+// const CollectionWorkersName string = "workers"
 
 const (
-	Created JobState = iota
+	Created WorkerState = iota
 	Running
 	Completed
 	Failed
 )
 
-type Job struct {
-	ID              string     `json:"id"`
-	State           JobState   `json:"state"`
-	SortState       []JobState `json:"sortState"`
-	PalindromeState []JobState `json:"palindromeState"`
-	Error           string     `json:"error"`
+const (
+	Sorter WorkerType = iota
+	Palindrome
+	SorterReduce
+	PalindromeReduce
+)
+
+type WorkerTypeState struct {
+	Type  WorkerType  `json:"type"`
+	State WorkerState `json:"state"`
 }
+
+type Job struct {
+	ID      string                     `json:"id"`
+	State   WorkerState                `json:"state"`
+	Workers map[string]WorkerTypeState `json:"workers"`
+	Error   string                     `json:"error"`
+}
+
+// WorkerTypeState []WorkerTypeState `json:"workerTypeState" firestore:"WorkerTypeState,omitempty"`
 
 type PubSubMessage struct {
 	Attributes map[string]string `json:"attributes"`
@@ -74,7 +93,7 @@ func Get(jobID string, fbClient *firestore.Client, ctx context.Context) (Job, er
 		return job, errors.New("jobID cannot be an empty string")
 	}
 
-	data, err := fbClient.Collection("jobs").Doc(jobID).Get(ctx)
+	data, err := fbClient.Collection(CollectionJobName).Doc(jobID).Get(ctx)
 
 	if err != nil && status.Code(err) == codes.NotFound {
 		job.Error = "Job with ID '" + jobID + "' not found"
@@ -97,9 +116,35 @@ func Get(jobID string, fbClient *firestore.Client, ctx context.Context) (Job, er
 	return job, nil
 }
 
-func Update(job Job, chunk int, js JobState, fbClient *firestore.Client, ctx context.Context) error {
+func AddWorker(jobID string, wt WorkerType, fbClient *firestore.Client, ctx context.Context) (uuid.UUID, error) {
+	workerUUID := uuid.New()
 
-	docRef := fbClient.Collection("jobs").Doc(job.ID)
+	_, err := fbClient.Collection(CollectionJobName).Doc(jobID).Update(ctx, []firestore.Update{
+		{Path: "Workers." + workerUUID.String(), Value: WorkerTypeState{Type: wt, State: Created}},
+	})
+
+	if err != nil {
+		return uuid.Nil, err
+	}
+	return workerUUID, nil
+}
+
+func SetState(job Job, ws WorkerState, fbClient *firestore.Client, ctx context.Context) error {
+	docRef := fbClient.Collection(CollectionJobName).Doc(job.ID)
+	_, err := docRef.Get(ctx)
+	if err != nil && status.Code(err) == codes.NotFound {
+		return errors.New("cannot update a non-existing Job")
+	}
+
+	_, err = docRef.Update(ctx, []firestore.Update{
+		{Path: "State", Value: ws},
+	})
+
+	return err
+}
+
+func UpdateWorker(jobID string, workerUUID uuid.UUID, ws WorkerState, fbClient *firestore.Client, ctx context.Context) error {
+	docRef := fbClient.Collection(CollectionJobName).Doc(jobID)
 	_, err := docRef.Get(ctx)
 	if err != nil && status.Code(err) == codes.NotFound {
 		return errors.New("cannot update a non-existing Job")
@@ -113,19 +158,13 @@ func Update(job Job, chunk int, js JobState, fbClient *firestore.Client, ctx con
 }
 
 func Create(jobID string, numChunks int, fbClient *firestore.Client, ctx context.Context) (Job, error) {
-	chunkStatus := make([]JobState, numChunks)
-	for i := range chunkStatus {
-		chunkStatus[i] = Created
-	}
-
 	j := Job{
-		ID:              jobID,
-		State:           Created,
-		SortState:       chunkStatus,
-		PalindromeState: chunkStatus,
-		Error:           "",
+		ID:      jobID,
+		State:   Created,
+		Workers: map[string]WorkerTypeState{},
+		Error:   "",
 	}
-	_, err := fbClient.Collection("jobs").Doc(j.ID).Set(ctx, &j)
+	_, err := fbClient.Collection(CollectionJobName).Doc(jobID).Set(ctx, &j)
 	if err != nil {
 		log.Printf("could not create/update document %v: %v", j.ID, err)
 		return j, err

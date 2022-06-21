@@ -97,7 +97,7 @@ func HandleUpload(ctx context.Context, e job.GCSEvent) error {
 	// Todo: handle error
 
 	// Publish tasks for each chunk
-	for i := range j.SortState {
+	for i := 0; i < chunks; i++ {
 		task := &pubsub.Message{
 			Attributes: map[string]string{
 				"jobID":      j.ID,

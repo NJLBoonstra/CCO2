@@ -1,7 +1,6 @@
 import * as gcs from "@google-cloud/storage";
-import { browser } from "$app/env";
-import {stringify, v4 as uuid } from "uuid";
-import type { Job } from "./job";
+import { v4 as uuid } from "uuid";
+import type { Job, PalindromeResult} from "./job";
 import { GoogleAuth, IdTokenClient } from "google-auth-library";
 
 
@@ -26,12 +25,32 @@ export async function generateJobName() {
     return newUuid;
 }
 
+export async function getPalindromeResult(jobID: string): Promise<PalindromeResult> {
+    const reqURL: URL = new URL(urlAPI + "/" + jobID + "/palindrome");
+    const authReq: IdTokenClient = await auth.getIdTokenClient(urlAPI);
+
+    const response = await authReq.request<PalindromeResult>({url: reqURL.href });
+    let data: PalindromeResult;
+
+    if (response.status === 200) {
+        data = response.data;
+    }
+    else
+        data = {
+            error: "Cloud function returned non-200 code",
+        }
+
+    return data
+}
+
 export async function getJobStatus(jobID: string): Promise<Job> {
     const reqURL: URL = new URL(urlAPI + "/" + jobID)
     const authReq: IdTokenClient = await auth.getIdTokenClient(urlAPI);
 
     const response = await authReq.request<Job>({url: reqURL.href});
     let data: Job;
+
+    console.log(response);
     
     if (response.status === 200) {
         data = response.data;
