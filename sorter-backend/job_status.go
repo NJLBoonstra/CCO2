@@ -20,7 +20,17 @@ func JobRequest(w http.ResponseWriter, r *http.Request) {
 
 	// Construct the jobID from the URL
 	reqURL := strings.Split(r.URL.Path, "/")
-	jobID := reqURL[len(reqURL)-1]
+
+	subrequest := "status"
+	if len(reqURL) == 0 {
+		log.Fatalf("No JobID given!")
+	}
+
+	jobID := reqURL[0]
+
+	if len(reqURL) == 2 {
+		subrequest = reqURL[1]
+	}
 
 	ctx := context.Background()
 	fbClient, err := firestore.NewClient(ctx, os.Getenv("GOOGLE_CLOUD_PROJECT"))
@@ -28,9 +38,15 @@ func JobRequest(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("Could not create Firestore client: %v", err)
 	}
 
-	j, _ := job.Get(jobID, fbClient, ctx)
-
-	js, err := json.Marshal(j)
+	var js []byte
+	if subrequest == "status" {
+		j, _ := job.Get(jobID, fbClient, ctx)
+		js, err = json.Marshal(j)
+	} else if subrequest == "palindrome" {
+		j, _ := job.GetPalindromeResult(jobID, fbClient, ctx)
+		js, err = json.Marshal(j)
+	}
+	// Handle the json.Marhal error here
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

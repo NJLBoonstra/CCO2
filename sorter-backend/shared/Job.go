@@ -20,11 +20,6 @@ const (
 	Failed
 )
 
-// type PalindromeResultType struct {
-// 	Palindromes       int `json:"palindromes"`
-// 	LongestPalindrome int `json:"longestPalindrome"`
-// }
-
 type Job struct {
 	ID              string     `json:"id"`
 	State           JobState   `json:"state"`
@@ -102,7 +97,7 @@ func Get(jobID string, fbClient *firestore.Client, ctx context.Context) (Job, er
 	return job, nil
 }
 
-func Update(job Job, fbClient *firestore.Client, ctx context.Context) error {
+func Update(job Job, chunk int, js JobState, fbClient *firestore.Client, ctx context.Context) error {
 
 	docRef := fbClient.Collection("jobs").Doc(job.ID)
 	_, err := docRef.Get(ctx)
@@ -111,7 +106,9 @@ func Update(job Job, fbClient *firestore.Client, ctx context.Context) error {
 	}
 
 	// UPdate the document yeah
-	_, err = docRef.Set(ctx, job)
+	// _, err = docRef.Update(ctx, []firestore.Update{
+	// 	PalindromeState: js,
+	// })
 	return err
 }
 

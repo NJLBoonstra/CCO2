@@ -132,7 +132,7 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 
 	j.SortState[chunkIndex] = job.Completed
 
-	err = job.Update(j, fbClient, ctx)
+	err = job.Update(j, chunkIndex, job.Completed, fbClient, ctx)
 	if err != nil {
 		log.Printf("Could not update the job: %v", err)
 		return err

@@ -3,9 +3,11 @@ package sorter_backend
 import (
 	"context"
 	"log"
+	"os"
 	"strconv"
 
 	job "cco.bn.edu/shared"
+	"cloud.google.com/go/firestore"
 	"cloud.google.com/go/storage"
 )
 
@@ -20,6 +22,7 @@ func FindPalindromes(ctx context.Context, m job.PubSubMessage) {
 
 	// Currently, the palindrome implementation only runs for the whole file
 	if chunkIdx > 0 {
+		log.Printf("Skipping chunk %v, chunking not implemented", chunkIdx)
 		return
 	}
 
@@ -88,6 +91,30 @@ func FindPalindromes(ctx context.Context, m job.PubSubMessage) {
 			// Reset word
 			word = ""
 		}
+	}
+
+	// Fetch job
+	fbClient, err := firestore.NewClient(ctx, os.Getenv("GOOGLE_CLOUD_PROJECT"))
+	if err != nil {
+		log.Fatalf("Could not create Firestore Client %v", err)
+	}
+	defer fbClient.Close()
+
+	j, err := job.Get(fileName, fbClient, ctx)
+	if err != nil {
+		log.Fatalf("Could not get job: %v", err)
+	}
+
+	j.PalindromeState[chunkIdx] = job.Completed
+
+	err = job.Update(j, chunkIdx, job.Completed, fbClient, ctx)
+	if err != nil {
+		log.Fatalf("Could not update job: %v", err)
+	}
+
+	err = job.AddPalindromeResult(fileName, palindromes, longest_pal, fbClient, ctx)
+	if err != nil {
+		log.Fatalf("Could not update Palindrome result: %v", err)
 	}
 
 	log.Printf("Palindromes: %d; Longest: %d", palindromes, longest_pal)
