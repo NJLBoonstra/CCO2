@@ -4,15 +4,18 @@ import (
 	"context"
 	"io"
 	"log"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
 
+	job "cco.bn.edu/shared"
+	"cloud.google.com/go/firestore"
 	"cloud.google.com/go/storage"
 )
 
 // HelloPubSub consumes a Pub/Sub message.
-func PartialSort(ctx context.Context, m PubSubMessage) error {
+func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 	bucketName := m.Attributes["bucket"]
 	fileName := m.Attributes["jobID"]
 
@@ -82,12 +85,31 @@ func PartialSort(ctx context.Context, m PubSubMessage) error {
 	result := strings.Join(split_str, " ")
 
 	// store sorting result
-	newObjectName := fileName + "-" + m.Attributes["index"]
+	newObjectName := fileName + "-" + strconv.Itoa(chunkIndex)
 	resultObj := bkt.Object(newObjectName)
 	w := resultObj.NewWriter(ctx)
 	_, err = io.WriteString(w, result)
 	if err != nil {
 		log.Fatal("Writing obj failed", err)
+	}
+
+	fbClient, err := firestore.NewClient(ctx, os.Getenv("GOOGLE_CLOUD_PROJECT"))
+	if err != nil {
+		log.Fatalf("Could not create a Firestore client: %v", err)
+		return err
+	}
+	j, _ := job.Get(fileName, fbClient, ctx)
+	if err != nil {
+		log.Printf("job.Get failed: %v", err)
+		return err
+	}
+
+	j.SortState[chunkIndex] = job.Completed
+
+	err = job.Update(j, fbClient, ctx)
+	if err != nil {
+		log.Printf("Could not update the job: %v", err)
+		return err
 	}
 
 	// determine if this is the last chunk

@@ -1,17 +1,19 @@
-package sorter_find_palindromes
+package sorter_backend
 
 import (
 	"context"
 	"log"
 	"strconv"
 
+	job "cco.bn.edu/shared"
 	"cloud.google.com/go/storage"
 )
 
-func FindPalindromes(ctx context.Context, m PubSubMessage) {
+func FindPalindromes(ctx context.Context, m job.PubSubMessage) {
 	fileName := m.Attributes["jobID"]
 	bucketName := m.Attributes["bucketName"]
 	chunkIdx, err := strconv.Atoi(m.Attributes["chunkIdx"])
+	// chunkSize, err := strconv.Atoi(m.Attributes["chunkSize"])
 	if err != nil {
 		log.Fatalf("Could not convert the chunkIdx to an int: %v", err)
 	}
