@@ -100,11 +100,11 @@ func HandleUpload(ctx context.Context, e job.GCSEvent) error {
 	for i := range j.SortState {
 		task := &pubsub.Message{
 			Attributes: map[string]string{
-				"jobID":     j.ID,
-				"chunkIdx":  strconv.Itoa(i),
-				"bucket":    bucketName,
-				"chunkSize": strconv.Itoa(chunkSize),
-				"marginSize": 
+				"jobID":      j.ID,
+				"chunkIdx":   strconv.Itoa(i),
+				"bucket":     bucketName,
+				"chunkSize":  strconv.Itoa(chunkSize),
+				"marginSize": strconv.Itoa(marginSize),
 			},
 			Data: js,
 		}
