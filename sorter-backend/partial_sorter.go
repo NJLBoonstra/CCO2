@@ -43,6 +43,7 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 	if err != nil {
 		log.Fatal("Client could not be created", err)
 	}
+	defer client.Close()
 
 	bkt := client.Bucket(bucketName)
 
@@ -55,6 +56,7 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 	if err != nil {
 		log.Fatal("Reading obj failed", err)
 	}
+	r.Close()
 
 	// determine first and last newline of chunk
 	str := string(partialString)
@@ -67,6 +69,7 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 			log.Fatalf("Could not create a NewRangeReader: %v", err)
 		}
 		_, err = r.Read(extPartialString)
+		r.Close()
 		if err != nil {
 			log.Fatalf("Reading obj in iteration failed %v", err)
 		}
@@ -92,12 +95,14 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 	if err != nil {
 		log.Fatal("Writing obj failed", err)
 	}
+	defer w.Close()
 
 	fbClient, err := firestore.NewClient(ctx, os.Getenv("GOOGLE_CLOUD_PROJECT"))
 	if err != nil {
 		log.Fatalf("Could not create a Firestore client: %v", err)
 		return err
 	}
+	defer fbClient.Close()
 	j, _ := job.Get(fileName, fbClient, ctx)
 	if err != nil {
 		log.Printf("job.Get failed: %v", err)
