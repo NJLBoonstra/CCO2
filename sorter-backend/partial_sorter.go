@@ -16,6 +16,12 @@ import (
 
 // HelloPubSub consumes a Pub/Sub message.
 func PartialSort(ctx context.Context, m job.PubSubMessage) error {
+	marginSize, err := strconv.Atoi(m.Attributes["marginSize"])
+	if err != nil {
+		log.Fatalf("Could not convert marginSize to int: %v", err)
+	}
+
+	// read pubsub
 	bucketName := m.Attributes["bucket"]
 	fileName := m.Attributes["jobID"]
 
@@ -27,17 +33,15 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 		log.Fatalf("Could not convert CHUNK_SIZE to int: %v", err)
 	}
 
-	// read pubsub
 	chunkIndex, _ := strconv.Atoi(m.Attributes["chunkIdx"])
-	margin := 128
 
 	log.Println("chunkSize: ", chunkSize)
 	log.Println("chunkIndex: ", chunkIndex)
-	log.Println("margin: ", margin)
+	log.Println("margin: ", marginSize)
 
 	// read from cloud storage
-	partialString := make([]byte, chunkSize+margin)
-	extPartialString := make([]byte, margin)
+	chunk_bytes := make([]byte, chunkSize)
+	margin_bytes := make([]byte, marginSize)
 	overRead := 0
 	client, err := storage.NewClient(ctx)
 	if err != nil {
@@ -48,35 +52,52 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 	bkt := client.Bucket(bucketName)
 
 	obj := bkt.Object(fileName)
-	r, err := obj.NewRangeReader(ctx, int64(chunkSize)*int64(chunkIndex), int64(chunkSize)+int64(margin))
+	chunk_reader, err := obj.NewRangeReader(ctx, int64(chunkSize*chunkIndex), int64(chunkSize))
 	if err != nil {
 		log.Fatalf("Reader creation failed for obj: %v in bucket: %v, %v", obj, bucketName, err)
 	}
-	_, err = r.Read(partialString)
+	margin_reader, err := obj.NewRangeReader(ctx, int64(chunkSize*(chunkIndex+1)), int64(marginSize))
+	if err != nil {
+		log.Fatalf("Reader creation failed for obj: %v in bucket: %v, %v", obj, bucketName, err)
+	}
+	_, err = chunk_reader.Read(chunk_bytes)
 	if err != nil {
 		log.Fatal("Reading obj failed", err)
 	}
-	r.Close()
+	_, err = margin_reader.Read(margin_bytes)
+	if err != nil {
+		log.Fatal("Reading obj failed", err)
+	}
+	chunk_reader.Close()
+	margin_reader.Close()
 
 	// determine first and last newline of chunk
-	str := string(partialString)
-	firstNL := strings.Index(str, "\n")
-	lastNL := strings.Index(str[chunkSize:], "\n")
+	chunk_string := string(chunk_bytes)
+	margin_string := string(margin_bytes)
+	firstNL := strings.Index(chunk_string, "\n")
+	if firstNL == -1 {
+		return nil
+	}
+	lastNL := strings.Index(margin_string, "\n")
+	chunk_string += margin_string
+
 	for lastNL == -1 {
 		overRead++
-		r, err = obj.NewRangeReader(ctx, int64(chunkSize)*int64(chunkIndex)+int64(margin), int64(margin))
+		margin_reader, err = obj.NewRangeReader(ctx, int64((chunkIndex+1)*chunkSize+marginSize*overRead), int64(marginSize))
 		if err != nil {
 			log.Fatalf("Could not create a NewRangeReader: %v", err)
 		}
-		_, err = r.Read(extPartialString)
-		r.Close()
+		_, err = margin_reader.Read(margin_bytes)
+		margin_reader.Close()
 		if err != nil {
 			log.Fatalf("Reading obj in iteration failed %v", err)
 		}
-		str += string(extPartialString)
-		lastNL = strings.Index(str[chunkSize+margin*overRead:], "\n")
+		margin_string = string(margin_bytes)
+		lastNL = strings.Index(margin_string, "\n")
+		chunk_string += margin_string
 	}
-	cut_str := str[firstNL:lastNL]
+
+	cut_str := chunk_string[firstNL : (chunkIndex+1)*chunkSize+marginSize*overRead+lastNL]
 
 	// split
 	split_str := strings.Fields(cut_str)
