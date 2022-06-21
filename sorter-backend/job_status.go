@@ -26,11 +26,13 @@ func JobRequest(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("No JobID given!")
 	}
 
-	jobID := reqURL[0]
-
-	if len(reqURL) == 2 {
-		subrequest = reqURL[1]
+	jobID := reqURL[1]
+	// log.Printf("jobID = %v", jobID)
+	// log.Printf("len(reqURL) = %v", len(reqURL))
+	if len(reqURL) == 3 {
+		subrequest = reqURL[2]
 	}
+	// log.Printf("subrequest = %v", subrequest)
 
 	ctx := context.Background()
 	fbClient, err := firestore.NewClient(ctx, os.Getenv("GOOGLE_CLOUD_PROJECT"))

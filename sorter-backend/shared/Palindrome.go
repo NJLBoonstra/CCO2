@@ -6,6 +6,8 @@ import (
 	"cloud.google.com/go/firestore"
 )
 
+const CollectionPalindrome string = "palindromeResults"
+
 type PalindromeResult struct {
 	JobID             string `json:"jobId"`
 	Palindromes       int    `json:"palindromes"`
@@ -19,14 +21,14 @@ func AddPalindromeResult(jobID string, palindromes int, longest int, fbClient *f
 		LongestPalindrome: longest,
 	}
 
-	_, err := fbClient.Collection("palindromeResults").Doc(jobID).Set(ctx, &res)
+	_, err := fbClient.Collection(CollectionPalindrome).Doc(jobID).Set(ctx, &res)
 
 	return err
 }
 
 func GetPalindromeResult(jobID string, fbClient *firestore.Client, ctx context.Context) (PalindromeResult, error) {
 	res := PalindromeResult{}
-	data, err := fbClient.Collection("palindromeResults").Doc(jobID).Get(ctx)
+	data, err := fbClient.Collection(CollectionPalindrome).Doc(jobID).Get(ctx)
 	if err != nil {
 		return res, err
 	}

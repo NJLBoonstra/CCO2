@@ -4,13 +4,11 @@ import (
 	"context"
 	"io"
 	"log"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
 
 	job "cco.bn.edu/shared"
-	"cloud.google.com/go/firestore"
 	"cloud.google.com/go/storage"
 )
 
@@ -118,25 +116,25 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 	}
 	defer w.Close()
 
-	fbClient, err := firestore.NewClient(ctx, os.Getenv("GOOGLE_CLOUD_PROJECT"))
-	if err != nil {
-		log.Fatalf("Could not create a Firestore client: %v", err)
-		return err
-	}
-	defer fbClient.Close()
-	j, _ := job.Get(fileName, fbClient, ctx)
-	if err != nil {
-		log.Printf("job.Get failed: %v", err)
-		return err
-	}
+	// fbClient, err := firestore.NewClient(ctx, os.Getenv("GOOGLE_CLOUD_PROJECT"))
+	// if err != nil {
+	// 	log.Fatalf("Could not create a Firestore client: %v", err)
+	// 	return err
+	// }
+	// defer fbClient.Close()
+	// j, _ := job.Get(fileName, fbClient, ctx)
+	// if err != nil {
+	// 	log.Printf("job.Get failed: %v", err)
+	// 	return err
+	// }
 
-	j.SortState[chunkIndex] = job.Completed
+	// j.SortState[chunkIndex] = job.Completed
 
-	err = job.Update(j, chunkIndex, job.Completed, fbClient, ctx)
-	if err != nil {
-		log.Printf("Could not update the job: %v", err)
-		return err
-	}
+	// err = job.Update(j, chunkIndex, job.Completed, fbClient, ctx)
+	// if err != nil {
+	// 	log.Printf("Could not update the job: %v", err)
+	// 	return err
+	// }
 
 	// determine if this is the last chunk
 	// if so, create pub/sub message for merging

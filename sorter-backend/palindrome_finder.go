@@ -11,9 +11,9 @@ import (
 	"cloud.google.com/go/storage"
 )
 
-func FindPalindromes(ctx context.Context, m job.PubSubMessage) {
+func FindPalindromes(ctx context.Context, m job.PubSubMessage) error {
 	fileName := m.Attributes["jobID"]
-	bucketName := m.Attributes["bucketName"]
+	bucketName := m.Attributes["bucket"]
 	chunkIdx, err := strconv.Atoi(m.Attributes["chunkIdx"])
 	// chunkSize, err := strconv.Atoi(m.Attributes["chunkSize"])
 	if err != nil {
@@ -23,14 +23,27 @@ func FindPalindromes(ctx context.Context, m job.PubSubMessage) {
 	// Currently, the palindrome implementation only runs for the whole file
 	if chunkIdx > 0 {
 		log.Printf("Skipping chunk %v, chunking not implemented", chunkIdx)
-		return
+		return nil
 	}
 
 	client, err := storage.NewClient(ctx)
-
 	if err != nil {
 		log.Printf("Error occured: %v", err)
-		return
+		return err
+	}
+	defer client.Close()
+
+	fbClient, err := firestore.NewClient(ctx, os.Getenv("GOOGLE_CLOUD_PROJECT"))
+	if err != nil {
+		log.Printf("Could not create Firestore Client %v", err)
+		return err
+	}
+	defer fbClient.Close()
+
+	myUUID, err := job.AddWorker(fileName, job.Palindrome, fbClient, ctx)
+	if err != nil {
+		log.Printf("could not add worker %v", err)
+		return err
 	}
 
 	bkt := client.Bucket(bucketName)
@@ -39,6 +52,7 @@ func FindPalindromes(ctx context.Context, m job.PubSubMessage) {
 
 	if err != nil {
 		log.Printf("Could not read object attributes: %v", err)
+		job.UpdateWorker(fileName, myUUID, job.Failed, fbClient, ctx)
 	}
 	obj_size := attrs.Size
 
@@ -46,7 +60,8 @@ func FindPalindromes(ctx context.Context, m job.PubSubMessage) {
 
 	if err != nil {
 		log.Printf("Could not open reader: %v", err)
-		return
+		job.UpdateWorker(fileName, myUUID, job.Failed, fbClient, ctx)
+		return err
 	}
 
 	buffer := make([]byte, obj_size)
@@ -55,6 +70,8 @@ func FindPalindromes(ctx context.Context, m job.PubSubMessage) {
 
 	if err != nil {
 		log.Printf("Could not read file: %v", err)
+		job.UpdateWorker(fileName, myUUID, job.Failed, fbClient, ctx)
+		return err
 	}
 
 	palindromes := 0
@@ -93,31 +110,21 @@ func FindPalindromes(ctx context.Context, m job.PubSubMessage) {
 		}
 	}
 
-	// Fetch job
-	fbClient, err := firestore.NewClient(ctx, os.Getenv("GOOGLE_CLOUD_PROJECT"))
-	if err != nil {
-		log.Fatalf("Could not create Firestore Client %v", err)
-	}
-	defer fbClient.Close()
-
-	j, err := job.Get(fileName, fbClient, ctx)
-	if err != nil {
-		log.Fatalf("Could not get job: %v", err)
-	}
-
-	j.PalindromeState[chunkIdx] = job.Completed
-
-	err = job.Update(j, chunkIdx, job.Completed, fbClient, ctx)
+	err = job.UpdateWorker(fileName, myUUID, job.Completed, fbClient, ctx)
 	if err != nil {
 		log.Fatalf("Could not update job: %v", err)
+		return err
 	}
 
 	err = job.AddPalindromeResult(fileName, palindromes, longest_pal, fbClient, ctx)
 	if err != nil {
 		log.Fatalf("Could not update Palindrome result: %v", err)
+		job.UpdateWorker(fileName, myUUID, job.Failed, fbClient, ctx)
+		return err
 	}
 
 	log.Printf("Palindromes: %d; Longest: %d", palindromes, longest_pal)
+	return nil
 }
 
 func CheckPalindrome(word string) bool {
