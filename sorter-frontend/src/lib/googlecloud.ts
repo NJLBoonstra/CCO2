@@ -49,8 +49,6 @@ export async function getJobStatus(jobID: string): Promise<Job> {
 
     const response = await authReq.request<Job>({url: reqURL.href});
     let data: Job;
-
-    console.log(response);
     
     if (response.status === 200) {
         data = response.data;

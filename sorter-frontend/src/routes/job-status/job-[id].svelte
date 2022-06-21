@@ -1,18 +1,15 @@
 <script lang="ts">
     import "../../app.css"
     import { page } from "$app/stores";
-    import { WorkerState, WorkerType, type Job, type PalindromeResult, type WorkerTypeState } from "$lib/job";
-import Workerstateelement from "$lib/components/workerstateelement.svelte";
+    import { WorkerState, WorkerStateToString, WorkerType, WorkerTypeToString, type Job, type PalindromeResult, type WorkerTypeState } from "$lib/job";
 
     export let jobStatus: Job;
-    console.log(jobStatus);
     
     let workerStatus: WorkerTypeState[] = [];
 
     for (const key in jobStatus.workers) {
         if (Object.prototype.hasOwnProperty.call(jobStatus.workers, key)) {
             const element = jobStatus.workers[key];
-            console.log(element);
             workerStatus.push(element);
         }
     }
@@ -26,7 +23,7 @@ import Workerstateelement from "$lib/components/workerstateelement.svelte";
     We encountered the following error: {jobStatus.error}!
 {:else}
     <div>
-        <p>Status for job '{$page.params.id}': {jobStatus.state ?? WorkerState.Failed}</p>
+        <p>Status for job '{$page.params.id}': {WorkerStateToString(jobStatus.state ?? WorkerState.Failed)}</p>
         <p>Worker information:</p>
         <table>
             <thead>
@@ -36,7 +33,11 @@ import Workerstateelement from "$lib/components/workerstateelement.svelte";
             </thead>
             <tbody>
                 {#each workerStatus as s, i}
-                    <Workerstateelement idx={i} state={s.State} type={s.Type}></Workerstateelement>
+                <tr>
+                    <td>{i}</td>
+                    <td>{WorkerTypeToString(s.Type)}</td>
+                    <td>{WorkerStateToString(s.State)}</td>
+                </tr>
                 {/each}
             </tbody>
         </table>

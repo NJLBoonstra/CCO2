@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 
 	job "cco.bn.edu/shared"
 	"cloud.google.com/go/firestore"
@@ -77,36 +78,18 @@ func FindPalindromes(ctx context.Context, m job.PubSubMessage) error {
 	palindromes := 0
 	longest_pal := 0
 
-	word_start := -1
-	var word string
-	// Iterate over values in buffer to construct words
-	// Ik heb gekozen om de []byte niet om te zetten naar string, want dat
-	// leek me een onnodige extra stap
-	for i, v := range buffer {
-		if (v >= 'a' && v <= 'z') || (v >= 'A' && v <= 'Z') {
-			// Word has started, or inside a word
-			if word_start < 0 {
-				word_start = i
-			}
-		} else {
-			if word_start > 0 {
-				// Word *may* have ended
-				word = string(buffer[word_start : i+1])
-			}
-		}
+	str := string(buffer)
+	words := strings.Split(str, " ")
+	log.Print(words)
 
-		if len(word) > 0 {
-			pal := CheckPalindrome(word)
+	for _, w := range words {
+		w = strings.Trim(w, " \n")
 
-			if pal {
-				palindromes++
-
-				if len(word) > longest_pal {
-					longest_pal = len(word)
-				}
+		if CheckPalindrome(w) {
+			palindromes++
+			if len(w) > longest_pal {
+				longest_pal = len(w)
 			}
-			// Reset word
-			word = ""
 		}
 	}
 
@@ -128,7 +111,9 @@ func FindPalindromes(ctx context.Context, m job.PubSubMessage) error {
 }
 
 func CheckPalindrome(word string) bool {
-	log.Printf("CheckPalindrome: %s", word)
+	if word == "" {
+		return false
+	}
 
 	for i := 0; i < (len(word)/2)+1; i++ {
 		j := len(word) - i - 1
