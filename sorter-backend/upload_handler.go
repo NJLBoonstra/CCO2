@@ -19,6 +19,7 @@ var psClient *pubsub.Client
 var fbClient *firestore.Client
 var sClient *storage.Client
 var chunkSize int
+var marginSize int
 
 func init() {
 	log.Print("Upload_handler: init()")
@@ -39,6 +40,16 @@ func init() {
 	chunkSize, err = strconv.Atoi(chunkSizeStr)
 	if err != nil {
 		log.Fatalf("Could not convert chunkSize: %v", err)
+	}
+
+	marginSizeStr, exists := os.LookupEnv("MARGIN_SIZE")
+	if !exists {
+		log.Fatalf("Please set MARGIN_SIZE")
+	}
+
+	marginSize, err = strconv.Atoi(marginSizeStr)
+	if err != nil {
+		log.Fatalf("Could not convert marginSize: %v", err)
 	}
 
 	psClient, err = pubsub.NewClient(ctx, project)
@@ -93,6 +104,7 @@ func HandleUpload(ctx context.Context, e job.GCSEvent) error {
 				"chunkIdx":  strconv.Itoa(i),
 				"bucket":    bucketName,
 				"chunkSize": strconv.Itoa(chunkSize),
+				"marginSize": 
 			},
 			Data: js,
 		}
