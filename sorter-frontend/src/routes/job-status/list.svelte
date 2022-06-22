@@ -3,8 +3,6 @@ import { type Job, WorkerStateToString } from "$lib/job";
     import "../../app.css"
 
     export let jobs: Job[];
-    console.log(jobs);
-    console.log(jobs[0].state)
 </script>
 
 <table>
