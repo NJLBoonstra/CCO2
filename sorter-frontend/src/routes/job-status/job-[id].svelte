@@ -35,8 +35,8 @@
                 {#each workerStatus as s, i}
                 <tr>
                     <td>{i}</td>
-                    <td>{WorkerTypeToString(s.Type)}</td>
-                    <td>{WorkerStateToString(s.State)}</td>
+                    <td>{WorkerTypeToString(s.type)}</td>
+                    <td>{WorkerStateToString(s.state)}</td>
                 </tr>
                 {/each}
             </tbody>

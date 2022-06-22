@@ -6,7 +6,7 @@ import { GoogleAuth, IdTokenClient } from "google-auth-library";
 
 const storage: gcs.Storage = new gcs.Storage();
 const bucketName: string = process.env.BUCKET_NAME ?? "cco";
-const appOrigin: string = process.env.APP_ORIGIN ?? "https://cloudcomputing-bn.appspot.com"
+const appOrigin: string = process.env.APP_ORIGIN ?? "localhost"
 const urlAPI: string = process.env.URL_API ?? "";
 const auth = new GoogleAuth();
 
@@ -41,6 +41,22 @@ export async function getPalindromeResult(jobID: string): Promise<PalindromeResu
         }
 
     return data
+}
+
+export async function getJobList(): Promise<Job[]> {
+    const reqURL: URL = new URL(urlAPI + "/all/list")
+    const authReq: IdTokenClient = await auth.getIdTokenClient(urlAPI);
+
+    const response = await authReq.request<Job[]>({url: reqURL.href});
+    let data: Job[] = [];
+
+    if (response.status === 200) {
+        data = response.data;
+    }
+
+
+    return data;
+
 }
 
 export async function getJobStatus(jobID: string): Promise<Job> {

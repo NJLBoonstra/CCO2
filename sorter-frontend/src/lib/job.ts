@@ -13,12 +13,12 @@ export enum WorkerType {
 }
 
 export type WorkerTypeState = {
-    Type: WorkerType,
-    State: WorkerState,
+    type: WorkerType,
+    state: WorkerState,
 };
 
 export type Job = {
-	ID?: string,
+	id?: string,
 	state?: WorkerState,
 	workers?: { [id: string]: WorkerTypeState},
     error?: string,
@@ -31,7 +31,7 @@ export type PalindromeResult = {
     error?: string,
 }
 
-export function WorkerStateToString(ws: number): string {
+export function WorkerStateToString(ws: WorkerState): string {
     switch (ws) {
         case WorkerState.Created:
             return "Created";
@@ -45,7 +45,7 @@ export function WorkerStateToString(ws: number): string {
             return "???";
     }
 }
-export function WorkerTypeToString(wt: number): string {
+export function WorkerTypeToString(wt: WorkerType): string {
     switch (wt) {
         case WorkerType.Palindrome:
             return "Palindrome";

@@ -23,6 +23,7 @@
     <form on:submit|preventDefault={formSubmit}><input name="jobID" type="text"></form>
     <p>And press enter</p>
 </div>
+<div class=smaller ><a href="/job-status/list">All jobs</a></div>
 
 <style>
     div {
