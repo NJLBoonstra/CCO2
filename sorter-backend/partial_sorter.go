@@ -4,11 +4,13 @@ import (
 	"context"
 	"io"
 	"log"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
 
 	job "cco.bn.edu/shared"
+	"cloud.google.com/go/firestore"
 	"cloud.google.com/go/storage"
 )
 
@@ -40,6 +42,20 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 	client, err := storage.NewClient(ctx)
 	check(err, "Client could not be created")
 	defer client.Close()
+
+	fbClient, err := firestore.NewClient(ctx, os.Getenv("GOOGLE_CLOUD_PROJECT"))
+	if err != nil {
+		log.Fatalf("Could not create a Firestore client: %v", err)
+		return err
+	}
+	defer fbClient.Close()
+
+	myUUID, err := job.AddWorker(fileName, job.Palindrome, fbClient, ctx)
+	if err != nil {
+		log.Printf("could not add worker %v", err)
+		return err
+	}
+
 	bkt := client.Bucket(bucketName)
 	obj := bkt.Object(fileName)
 
@@ -126,33 +142,24 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 	_, err = io.WriteString(w, result)
 	if err != nil {
 		log.Fatal("Writing obj failed", err)
+		job.UpdateWorker(fileName, myUUID, job.Failed, fbClient, ctx)
 	}
 	defer w.Close()
 
-	// fbClient, err := firestore.NewClient(ctx, os.Getenv("GOOGLE_CLOUD_PROJECT"))
-	// if err != nil {
-	// 	log.Fatalf("Could not create a Firestore client: %v", err)
-	// 	return err
-	// }
-	// defer fbClient.Close()
-	// j, _ := job.Get(fileName, fbClient, ctx)
-	// if err != nil {
-	// 	log.Printf("job.Get failed: %v", err)
-	// 	return err
-	// }
-
-	// j.SortState[chunkIndex] = job.Completed
-
-	// err = job.Update(j, chunkIndex, job.Completed, fbClient, ctx)
-	// if err != nil {
-	// 	log.Printf("Could not update the job: %v", err)
-	// 	return err
-	// }
+	err = job.UpdateWorker(fileName, myUUID, job.Completed, fbClient, ctx)
+	if err != nil {
+		log.Fatalf("Could not update job: %v", err)
+		return err
+	}
 
 	// determine if this is the last chunk
 	// if so, create pub/sub message for merging
+	allDone, _ := job.AllWorkerTypeStates(fileName, job.WorkerTypeState{Type: job.Sorter, State: job.Completed}, fbClient, ctx)
 
-	// TODO
+	if allDone {
+		// Last chunk, do something with merging perhaps
+		job.SetState(fileName, job.Reducing, fbClient, ctx)
+	}
 
 	return nil
 }

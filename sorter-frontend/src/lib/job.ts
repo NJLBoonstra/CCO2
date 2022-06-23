@@ -1,6 +1,7 @@
 export enum WorkerState {
     Created,
     Running,
+    Reducing,
     Completed,
     Failed
 };
@@ -39,6 +40,8 @@ export function WorkerStateToString(ws: WorkerState): string {
             return "Running";
         case WorkerState.Completed:
             return "Completed";
+        case WorkerState.Reducing:
+            return "Reducing";
         case WorkerState.Failed:
             return "Failed";
         default:

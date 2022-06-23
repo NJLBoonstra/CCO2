@@ -23,6 +23,7 @@ const CollectionJobName string = "jobs"
 const (
 	Created WorkerState = iota
 	Running
+	Reducing
 	Completed
 	Failed
 )
@@ -161,8 +162,8 @@ func AddWorker(jobID string, wt WorkerType, fbClient *firestore.Client, ctx cont
 	return workerUUID, nil
 }
 
-func SetState(job Job, ws WorkerState, fbClient *firestore.Client, ctx context.Context) error {
-	docRef := fbClient.Collection(CollectionJobName).Doc(job.ID)
+func SetState(jobID string, ws WorkerState, fbClient *firestore.Client, ctx context.Context) error {
+	docRef := fbClient.Collection(CollectionJobName).Doc(jobID)
 	_, err := docRef.Get(ctx)
 	if err != nil && status.Code(err) == codes.NotFound {
 		return errors.New("cannot update a non-existing Job")
@@ -175,17 +176,48 @@ func SetState(job Job, ws WorkerState, fbClient *firestore.Client, ctx context.C
 	return err
 }
 
+func AllWorkerTypeStates(jobID string, wts WorkerTypeState, fbClient *firestore.Client, ctx context.Context) (bool, error) {
+	docRef := fbClient.Collection(CollectionJobName).Doc(jobID)
+	j, err := docRef.Get(ctx)
+	if err != nil && status.Code(err) == codes.NotFound {
+		return false, errors.New("cannot check workers of a non-existing Job")
+	}
+
+	job := Job{}
+	err = j.DataTo(&job)
+	if err != nil {
+		return false, err
+	}
+
+	for _, v := range job.Workers {
+		if v != wts {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
 func UpdateWorker(jobID string, workerUUID uuid.UUID, ws WorkerState, fbClient *firestore.Client, ctx context.Context) error {
 	docRef := fbClient.Collection(CollectionJobName).Doc(jobID)
-	_, err := docRef.Get(ctx)
+	j, err := docRef.Get(ctx)
 	if err != nil && status.Code(err) == codes.NotFound {
 		return errors.New("cannot update a non-existing Job")
 	}
 
+	// TODO: dit misschien efficienter?
+	job := Job{}
+	err = j.DataTo(&job)
+	if err != nil {
+		return err
+	}
+
+	workerType := job.Workers[workerUUID.String()].Type
+
 	// UPdate the document yeah
-	// _, err = docRef.Update(ctx, []firestore.Update{
-	// 	PalindromeState: js,
-	// })
+	_, err = fbClient.Collection(CollectionJobName).Doc(jobID).Update(ctx, []firestore.Update{
+		{Path: "Workers." + workerUUID.String(), Value: WorkerTypeState{Type: workerType, State: ws}},
+	})
 	return err
 }
 
