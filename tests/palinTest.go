@@ -7,23 +7,21 @@ import (
 )
 
 func main() {
-	f, _ := os.Open("../../alice29.txt")
+	f, _ := os.Open("/home/niels/CCO2/tests/test1.txt")
 
 	buffer := make([]byte, 1024*1024)
 
-	_, _ = f.Read(buffer)
+	n, _ := f.Read(buffer)
 	palindromes := 0
 	longest_pal := 0
 
-	str := string(buffer)
+	str := string(buffer[:n])
 	words := strings.Split(str, " ")
-	log.Print(words)
 
 	for _, w := range words {
 		w = strings.Trim(w, " \n")
 
-		if len(w) > 2 && CheckPalindrome(w) {
-			log.Print("palindrome: ", w)
+		if len(w) > 0 && CheckPalindrome(w) {
 			palindromes++
 			if len(w) > longest_pal {
 				longest_pal = len(w)

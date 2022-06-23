@@ -17,9 +17,9 @@ def find_palindromes(filename: str):
     for word in buffer:
         word = word.strip().strip("\n")
 
-        if word == word[::-1]:
+        if len(word) > 0 and word == word[::-1]:
             palindromes += 1
-
+            print(word)
             if len(word) > longest_palindrome:
                 longest_palindrome = len(word)
 
