@@ -8,6 +8,7 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"github.com/google/uuid"
+	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -114,6 +115,37 @@ func Get(jobID string, fbClient *firestore.Client, ctx context.Context) (Job, er
 	}
 
 	return job, nil
+}
+
+func GetList(fbClient *firestore.Client, ctx context.Context) ([]Job, error) {
+	docRefs := fbClient.Collection(CollectionJobName).DocumentRefs(ctx)
+
+	jobs := []Job{}
+
+	for {
+		docRef, err := docRefs.Next()
+
+		if err == iterator.Done {
+			break
+		}
+
+		job := Job{}
+
+		j, err := docRef.Get(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		err = j.DataTo(&job)
+		if err != nil {
+			return nil, err
+		}
+
+		jobs = append(jobs, job)
+
+	}
+
+	return jobs, nil
 }
 
 func AddWorker(jobID string, wt WorkerType, fbClient *firestore.Client, ctx context.Context) (uuid.UUID, error) {

@@ -67,7 +67,7 @@ func FindPalindromes(ctx context.Context, m job.PubSubMessage) error {
 
 	buffer := make([]byte, obj_size)
 
-	_, err = reader.Read(buffer)
+	n, err := reader.Read(buffer)
 
 	if err != nil {
 		log.Printf("Could not read file: %v", err)
@@ -78,14 +78,12 @@ func FindPalindromes(ctx context.Context, m job.PubSubMessage) error {
 	palindromes := 0
 	longest_pal := 0
 
-	str := string(buffer)
+	str := string(buffer[:n])
 	words := strings.Split(str, " ")
-	log.Print(words)
-
 	for _, w := range words {
 		w = strings.Trim(w, " \n")
 
-		if CheckPalindrome(w) {
+		if len(w) > 0 && CheckPalindrome(w) {
 			palindromes++
 			if len(w) > longest_pal {
 				longest_pal = len(w)

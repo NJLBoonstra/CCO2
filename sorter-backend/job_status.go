@@ -47,6 +47,9 @@ func JobRequest(w http.ResponseWriter, r *http.Request) {
 	} else if subrequest == "palindrome" {
 		j, _ := job.GetPalindromeResult(jobID, fbClient, ctx)
 		js, err = json.Marshal(j)
+	} else if subrequest == "list" {
+		j, _ := job.GetList(fbClient, ctx)
+		js, err = json.Marshal(j)
 	}
 	// Handle the json.Marhal error here
 	if err != nil {
