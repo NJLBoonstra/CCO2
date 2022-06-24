@@ -54,6 +54,12 @@ type PubSubMessage struct {
 	MessageId  string            `json:"messageId"`
 }
 
+type MergePubSub struct {
+	Data       []byte            `json:"data"`
+	Attributes map[string]string `json:"attributes"`
+	MessageId  string            `json:"messageId"`
+}
+
 // GCSEvent is the payload of a GCS event.
 type GCSEvent struct {
 	Kind                    string                 `json:"kind"`
