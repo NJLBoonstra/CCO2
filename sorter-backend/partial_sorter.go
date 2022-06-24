@@ -131,7 +131,7 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 	}
 
 	if EOF {
-		lastNL = int(objectSize)
+		lastNL = len(chunk_string)
 	}
 
 	// TODO make lastNL relative to the chunk
