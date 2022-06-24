@@ -133,6 +133,7 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 		lastNL = int(objectSize)
 	}
 
+	// TODO make lastNL relative to the chunk
 	cut_str := chunk_string[firstNL:lastNL]
 
 	result := sort_lines(cut_str)
