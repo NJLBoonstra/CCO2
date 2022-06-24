@@ -169,7 +169,7 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 			StartOffset: fileName + "/",
 		}
 
-		objects := chunkBkt.Objects(ctx, nil)
+		objects := chunkBkt.Objects(ctx, q)
 		chunks := []string{}
 
 		for {

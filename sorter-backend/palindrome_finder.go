@@ -85,7 +85,7 @@ func FindPalindromes(ctx context.Context, e job.GCSEvent) error {
 		return err
 	}
 
-	err = job.AddPalindromeResult(jobID, palindromes, longest_pal, fbClient, ctx)
+	err = job.UpdatePalindromeResult(jobID, myUUID, palindromes, longest_pal, fbClient, ctx)
 	if err != nil {
 		log.Fatalf("Could not update Palindrome result: %v", err)
 		job.UpdateWorker(jobID, myUUID, job.Failed, fbClient, ctx)
@@ -93,6 +93,26 @@ func FindPalindromes(ctx context.Context, e job.GCSEvent) error {
 	}
 
 	log.Printf("Palindromes: %d; Longest: %d", palindromes, longest_pal)
+
+	// determine if this is the last chunk
+	// if so, create pub/sub message for merging
+	allDone, _ := job.AllWorkerTypeStates(jobID, job.WorkerTypeState{Type: job.Palindrome, State: job.Completed}, fbClient, ctx)
+
+	if allDone {
+		// Last chunk, do something with merging perhaps
+
+		res, _ := job.GetPalindromeResult(jobID, fbClient, ctx)
+		longest := 0
+		sum := 0
+		for _, v := range res {
+			if v.LongestPalindrome > longest {
+				longest = v.LongestPalindrome
+			}
+			sum += v.Palindromes
+		}
+		job.UpdatePalindromeJobResult(jobID, sum, longest, fbClient, ctx)
+	}
+
 	return nil
 }
 

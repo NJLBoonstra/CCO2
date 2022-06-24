@@ -104,6 +104,12 @@ func HandleUpload(ctx context.Context, e job.GCSEvent) error {
 		return err
 	}
 
+	err = job.CreatePalindromeTable(jobUUID.String(), fbClient, ctx)
+	if err != nil {
+		log.Printf("Could not get the job: %v", err)
+		return err
+	}
+
 	js, _ := json.Marshal(j)
 
 	// Todo: handle error
