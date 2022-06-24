@@ -165,6 +165,10 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 		// Last chunk, do something with merging perhaps
 		job.SetState(fileName, job.Reducing, fbClient, ctx)
 
+		q := &storage.Query{
+			StartOffset: fileName + "/",
+		}
+
 		objects := chunkBkt.Objects(ctx, nil)
 		chunks := []string{}
 
@@ -174,14 +178,7 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 				break
 			}
 
-			if err != nil {
-				log.Printf("cannot iterate over files in bucket: %v", err)
-			}
-			log.Printf("jobid: %v file: %v", fileName, attrs.Name)
-			if strings.HasPrefix(attrs.Name, fileName) {
-
-				chunks = append(chunks, attrs.Name)
-			}
+			chunks = append(chunks, attrs.Name)
 
 		}
 
