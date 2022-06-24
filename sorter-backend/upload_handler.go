@@ -18,6 +18,8 @@ import (
 var psClient *pubsub.Client
 var fbClient *firestore.Client
 var sClient *storage.Client
+var chunkBucket string
+var resultBucket string
 var chunkSize int
 var marginSize int
 
@@ -35,6 +37,15 @@ func init() {
 	chunkSizeStr, exists := os.LookupEnv("CHUNK_SIZE")
 	if !exists {
 		log.Fatalf("Please set CHUNk_SIZE")
+	}
+	chunkBucket, exists = os.LookupEnv("CHUNK_BUCKET")
+	if !exists {
+		log.Fatalf("Please set CHUNK_BUCKET")
+	}
+
+	resultBucket, exists = os.LookupEnv("RESULT_BUCKET")
+	if !exists {
+		log.Fatalf("Please set RESULT_BUCKET1")
 	}
 
 	chunkSize, err = strconv.Atoi(chunkSizeStr)
@@ -66,6 +77,7 @@ func init() {
 	if err != nil {
 		log.Fatalf("Cannot create a Storage Client: %v", err)
 	}
+
 }
 
 func HandleUpload(ctx context.Context, e job.GCSEvent) error {
@@ -86,7 +98,7 @@ func HandleUpload(ctx context.Context, e job.GCSEvent) error {
 	}
 
 	chunks := int(math.Ceil(float64(objAttr.Size) / float64(chunkSize)))
-	j, err := job.Create(jobUUID.String(), chunks, fbClient, ctx)
+	j, err := job.Create(jobUUID.String(), objAttr.Metadata["original-filename"], chunks, fbClient, ctx)
 	if err != nil {
 		log.Printf("Could not get the job: %v", err)
 		return err
@@ -100,12 +112,14 @@ func HandleUpload(ctx context.Context, e job.GCSEvent) error {
 	for i := 0; i < chunks; i++ {
 		task := &pubsub.Message{
 			Attributes: map[string]string{
-				"jobID":      j.ID,
-				"chunkIdx":   strconv.Itoa(i),
-				"bucket":     bucketName,
-				"chunkSize":  strconv.Itoa(chunkSize),
-				"marginSize": strconv.Itoa(marginSize),
-				"objectSize": strconv.FormatInt(objAttr.Size, 10),
+				"jobID":        j.ID,
+				"chunkIdx":     strconv.Itoa(i),
+				"bucket":       bucketName,
+				"resultBucket": resultBucket,
+				"chunkBucket":  chunkBucket,
+				"chunkSize":    strconv.Itoa(chunkSize),
+				"marginSize":   strconv.Itoa(marginSize),
+				"objectSize":   strconv.FormatInt(objAttr.Size, 10),
 			},
 			Data: js,
 		}

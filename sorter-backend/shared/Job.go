@@ -41,10 +41,11 @@ type WorkerTypeState struct {
 }
 
 type Job struct {
-	ID      string                     `json:"id"`
-	State   WorkerState                `json:"state"`
-	Workers map[string]WorkerTypeState `json:"workers"`
-	Error   string                     `json:"error"`
+	ID       string                     `json:"id"`
+	Filename string                     `json:"filename"`
+	State    WorkerState                `json:"state"`
+	Workers  map[string]WorkerTypeState `json:"workers"`
+	Error    string                     `json:"error"`
 }
 
 // WorkerTypeState []WorkerTypeState `json:"workerTypeState" firestore:"WorkerTypeState,omitempty"`
@@ -228,12 +229,13 @@ func UpdateWorker(jobID string, workerUUID uuid.UUID, ws WorkerState, fbClient *
 	return err
 }
 
-func Create(jobID string, numChunks int, fbClient *firestore.Client, ctx context.Context) (Job, error) {
+func Create(jobID string, filename string, numChunks int, fbClient *firestore.Client, ctx context.Context) (Job, error) {
 	j := Job{
-		ID:      jobID,
-		State:   Created,
-		Workers: map[string]WorkerTypeState{},
-		Error:   "",
+		ID:       jobID,
+		State:    Created,
+		Workers:  map[string]WorkerTypeState{},
+		Filename: filename,
+		Error:    "",
 	}
 	_, err := fbClient.Collection(CollectionJobName).Doc(jobID).Set(ctx, &j)
 	if err != nil {

@@ -11,7 +11,9 @@ import (
 
 	job "cco.bn.edu/shared"
 	"cloud.google.com/go/firestore"
+	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
+	"google.golang.org/api/iterator"
 )
 
 func sort_lines(s string) string {
@@ -32,6 +34,8 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 	check(err, "Could not convert marginSize to int")
 	bucketName := m.Attributes["bucket"]
 	fileName := m.Attributes["jobID"]
+	chunkBucket := m.Attributes["chunkBucket"]
+	resultBucket := m.Attributes["resultBucket"]
 	chunkSize, err := strconv.Atoi(m.Attributes["chunkSize"])
 	check(err, "Could not convert CHUNK_SIZE to int")
 	chunkIndex, err := strconv.Atoi(m.Attributes["chunkIdx"])
@@ -75,9 +79,6 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 	check(err, "Reading obj failed")
 	chunk_reader.Close()
 
-	log.Printf("chunkIndex: %v. chunkSize: %v. Bytes read: %v", chunkIndex, chunkSize, 1)
-	log.Printf("int64(chunkSize) = %v", int64(chunkSize))
-
 	chunk_string := string(slurp)
 
 	firstNL := 0
@@ -105,7 +106,6 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 			offset := int64((chunkIndex+1)*chunkSize + marginSize*overRead)
 			if offset+int64(marginSize) > int64(objectSize) {
 				marginSize = int(objectSize) - int(offset)
-				margin_bytes = make([]byte, marginSize)
 				EOF = true
 				margin_reader, err = obj.NewRangeReader(ctx, offset, int64(marginSize))
 				check(err, "Could not create a NewRangeReader")
@@ -139,14 +139,15 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 
 	// store sorting result
 	newObjectName := fileName + "-" + strconv.Itoa(chunkIndex)
-	resultObj := bkt.Object(newObjectName)
+	chunkBkt := client.Bucket(chunkBucket)
+	resultObj := chunkBkt.Object(newObjectName)
 	w := resultObj.NewWriter(ctx)
 	_, err = w.Write([]byte(result))
 	if err != nil {
 		log.Fatal("Writing obj failed", err)
 		job.UpdateWorker(fileName, myUUID, job.Failed, fbClient, ctx)
 	}
-	defer w.Close()
+	w.Close()
 
 	err = job.UpdateWorker(fileName, myUUID, job.Completed, fbClient, ctx)
 	if err != nil {
@@ -161,6 +162,44 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 	if allDone {
 		// Last chunk, do something with merging perhaps
 		job.SetState(fileName, job.Reducing, fbClient, ctx)
+
+		objects := chunkBkt.Objects(ctx, nil)
+		chunks := []string{}
+
+		for {
+			attrs, err := objects.Next()
+			if err == iterator.Done {
+				break
+			}
+
+			if err != nil {
+				log.Printf("cannot iterate over files in bucket: %v", err)
+			}
+
+			if strings.HasPrefix(attrs.Name, fileName) {
+				chunks = append(chunks, attrs.Name)
+			}
+
+		}
+
+		task := &pubsub.Message{
+			Attributes: map[string]string{
+				"jobID":        fileName,
+				"resultBucket": resultBucket,
+				"chunkBucket":  chunkBucket,
+			},
+			Data: []byte(strings.Join(chunks, ",")),
+		}
+
+		r := psClient.Topic("reduceJobs").Publish(ctx, task)
+		msgId, err := r.Get(ctx)
+
+		if err != nil {
+			log.Printf("could not publish job: %v", err)
+		}
+
+		log.Printf("Published message: %v", msgId)
+
 	}
 
 	return nil

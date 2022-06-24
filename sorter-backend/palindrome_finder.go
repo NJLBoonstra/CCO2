@@ -2,6 +2,7 @@ package sorter_backend
 
 import (
 	"context"
+	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -49,13 +50,13 @@ func FindPalindromes(ctx context.Context, m job.PubSubMessage) error {
 
 	bkt := client.Bucket(bucketName)
 	obj := bkt.Object(fileName)
-	attrs, err := obj.Attrs(ctx)
+	// attrs, err := obj.Attrs(ctx)
 
 	if err != nil {
 		log.Printf("Could not read object attributes: %v", err)
 		job.UpdateWorker(fileName, myUUID, job.Failed, fbClient, ctx)
 	}
-	obj_size := attrs.Size
+	// obj_size := attrs.Size
 
 	reader, err := obj.NewReader(ctx)
 
@@ -65,9 +66,7 @@ func FindPalindromes(ctx context.Context, m job.PubSubMessage) error {
 		return err
 	}
 
-	buffer := make([]byte, obj_size)
-
-	n, err := reader.Read(buffer)
+	buffer, err := ioutil.ReadAll(reader)
 
 	if err != nil {
 		log.Printf("Could not read file: %v", err)
@@ -78,7 +77,7 @@ func FindPalindromes(ctx context.Context, m job.PubSubMessage) error {
 	palindromes := 0
 	longest_pal := 0
 
-	str := string(buffer[:n])
+	str := string(buffer)
 	words := strings.Split(str, " ")
 	for _, w := range words {
 		w = strings.Trim(w, " \n")
