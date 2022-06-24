@@ -30,21 +30,20 @@ func FindPalindromes(ctx context.Context, e job.GCSEvent) error {
 	}
 	defer fbClient.Close()
 
-	fileName := strings.Split(chunkFileName, "/")[0]
-
-	myUUID, err := job.AddWorker(fileName, job.Palindrome, fbClient, ctx)
+	jobID := strings.Split(chunkFileName, "/")[0]
+	myUUID, err := job.AddWorker(jobID, job.Palindrome, fbClient, ctx)
 	if err != nil {
 		log.Printf("could not add worker %v", err)
 		return err
 	}
 
 	bkt := client.Bucket(bucketName)
-	obj := bkt.Object(fileName)
+	obj := bkt.Object(chunkFileName)
 	// attrs, err := obj.Attrs(ctx)
 
 	if err != nil {
 		log.Printf("Could not read object attributes: %v", err)
-		job.UpdateWorker(fileName, myUUID, job.Failed, fbClient, ctx)
+		job.UpdateWorker(jobID, myUUID, job.Failed, fbClient, ctx)
 	}
 	// obj_size := attrs.Size
 
@@ -52,7 +51,7 @@ func FindPalindromes(ctx context.Context, e job.GCSEvent) error {
 
 	if err != nil {
 		log.Printf("Could not open reader: %v", err)
-		job.UpdateWorker(fileName, myUUID, job.Failed, fbClient, ctx)
+		job.UpdateWorker(jobID, myUUID, job.Failed, fbClient, ctx)
 		return err
 	}
 
@@ -60,7 +59,7 @@ func FindPalindromes(ctx context.Context, e job.GCSEvent) error {
 
 	if err != nil {
 		log.Printf("Could not read file: %v", err)
-		job.UpdateWorker(fileName, myUUID, job.Failed, fbClient, ctx)
+		job.UpdateWorker(jobID, myUUID, job.Failed, fbClient, ctx)
 		return err
 	}
 
@@ -80,16 +79,16 @@ func FindPalindromes(ctx context.Context, e job.GCSEvent) error {
 		}
 	}
 
-	err = job.UpdateWorker(fileName, myUUID, job.Completed, fbClient, ctx)
+	err = job.UpdateWorker(jobID, myUUID, job.Completed, fbClient, ctx)
 	if err != nil {
 		log.Fatalf("Could not update job: %v", err)
 		return err
 	}
 
-	err = job.AddPalindromeResult(fileName, palindromes, longest_pal, fbClient, ctx)
+	err = job.AddPalindromeResult(jobID, palindromes, longest_pal, fbClient, ctx)
 	if err != nil {
 		log.Fatalf("Could not update Palindrome result: %v", err)
-		job.UpdateWorker(fileName, myUUID, job.Failed, fbClient, ctx)
+		job.UpdateWorker(jobID, myUUID, job.Failed, fbClient, ctx)
 		return err
 	}
 

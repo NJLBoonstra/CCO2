@@ -140,7 +140,7 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 	result := sort_lines(cut_str)
 
 	// store sorting result
-	newObjectName := fileName + "-" + strconv.Itoa(chunkIndex)
+	newObjectName := fileName + "/" + strconv.Itoa(chunkIndex)
 	chunkBkt := client.Bucket(chunkBucket)
 	resultObj := chunkBkt.Object(newObjectName)
 	w := resultObj.NewWriter(ctx)
@@ -177,8 +177,9 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 			if err != nil {
 				log.Printf("cannot iterate over files in bucket: %v", err)
 			}
-
+			log.Printf("jobid: %v file: %v", fileName, attrs.Name)
 			if strings.HasPrefix(attrs.Name, fileName) {
+
 				chunks = append(chunks, attrs.Name)
 			}
 
