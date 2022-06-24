@@ -41,11 +41,14 @@ type WorkerTypeState struct {
 }
 
 type Job struct {
-	ID       string                     `json:"id"`
-	Filename string                     `json:"filename"`
-	State    WorkerState                `json:"state"`
-	Workers  map[string]WorkerTypeState `json:"workers"`
-	Error    string                     `json:"error"`
+	ID               string                     `json:"id"`
+	Filename         string                     `json:"filename"`
+	Created          time.Time                  `json:"created"`
+	SortFinish       time.Time                  `json:"sortFinish"`
+	PalindromeFinish time.Time                  `json:"palindromeFinish"`
+	State            WorkerState                `json:"state"`
+	Workers          map[string]WorkerTypeState `json:"workers"`
+	Error            string                     `json:"error"`
 }
 
 // WorkerTypeState []WorkerTypeState `json:"workerTypeState" firestore:"WorkerTypeState,omitempty"`
@@ -236,6 +239,7 @@ func Create(jobID string, filename string, numChunks int, fbClient *firestore.Cl
 		Workers:  map[string]WorkerTypeState{},
 		Filename: filename,
 		Error:    "",
+		Created:  time.Now(),
 	}
 	_, err := fbClient.Collection(CollectionJobName).Doc(jobID).Set(ctx, &j)
 	if err != nil {
