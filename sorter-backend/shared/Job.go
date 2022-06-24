@@ -190,7 +190,8 @@ func AllWorkerTypeStates(jobID string, wts WorkerTypeState, fbClient *firestore.
 	}
 
 	for _, v := range job.Workers {
-		if v != wts {
+		// Skip the Workers not of our type
+		if v.Type == wts.Type && v.State != wts.State {
 			return false, nil
 		}
 	}
