@@ -4,7 +4,10 @@
     import { WorkerState, WorkerStateToString, WorkerType, WorkerTypeToString, type Job, type PalindromeResult, type WorkerTypeState } from "$lib/job";
 
     export let jobStatus: Job;
-    
+
+    console.log(jobStatus.created?.valueOf());
+    console.log(jobStatus.palindromeFinish?.valueOf());
+
     let workerStatus: WorkerTypeState[] = [];
 
     for (const key in jobStatus.workers) {
@@ -24,7 +27,14 @@
 {:else}
     <div>
         <p>Status for job '{$page.params.id}': {WorkerStateToString(jobStatus.state ?? WorkerState.Failed)}</p>
-        <p>Worker information:</p>
+        <p>Job information:</p>
+        <p>Created: {jobStatus.created}</p>
+        {#if jobStatus.sortFinish}
+            <p>Sorting finished @ {jobStatus.sortFinish.toLocaleString()}</p>
+        {/if}
+        {#if jobStatus.palindromeFinish}
+            <p>Finding palindromes finished @ {jobStatus.palindromeFinish}</p>
+        {/if}
         <table>
             <thead>
                 <th>Worker</th>
