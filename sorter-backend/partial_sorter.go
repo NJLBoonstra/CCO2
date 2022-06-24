@@ -85,6 +85,8 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 	if chunkIndex != 0 {
 		firstNL = strings.Index(chunk_string, "\n")
 	}
+
+	// This chunk contains no NL
 	if firstNL == -1 {
 		return nil
 	}
@@ -113,7 +115,6 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 				check(err, "Reading obj in iteration failed")
 				defer margin_reader.Close()
 				margin_string = string(margin_bytes)
-				lastNL = int(objectSize)
 				chunk_string += margin_string
 				break
 			}
@@ -126,7 +127,7 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 			lastNL = strings.Index(margin_string, "\n")
 			chunk_string += margin_string
 		}
-		lastNL += (chunkIndex+1)*chunkSize + marginSize*(overRead+1)
+		lastNL += chunkSize + marginSize*overRead
 	}
 
 	if EOF {

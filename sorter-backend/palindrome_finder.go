@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"strconv"
 	"strings"
 
 	job "cco.bn.edu/shared"
@@ -13,20 +12,9 @@ import (
 	"cloud.google.com/go/storage"
 )
 
-func FindPalindromes(ctx context.Context, m job.PubSubMessage) error {
-	fileName := m.Attributes["jobID"]
-	bucketName := m.Attributes["bucket"]
-	chunkIdx, err := strconv.Atoi(m.Attributes["chunkIdx"])
-	// chunkSize, err := strconv.Atoi(m.Attributes["chunkSize"])
-	if err != nil {
-		log.Fatalf("Could not convert the chunkIdx to an int: %v", err)
-	}
-
-	// Currently, the palindrome implementation only runs for the whole file
-	if chunkIdx > 0 {
-		log.Printf("Skipping chunk %v, chunking not implemented", chunkIdx)
-		return nil
-	}
+func FindPalindromes(ctx context.Context, e job.GCSEvent) error {
+	chunkFileName := e.Name
+	bucketName := e.Bucket
 
 	client, err := storage.NewClient(ctx)
 	if err != nil {
@@ -41,6 +29,8 @@ func FindPalindromes(ctx context.Context, m job.PubSubMessage) error {
 		return err
 	}
 	defer fbClient.Close()
+
+	fileName := strings.Split(chunkFileName, "/")[0]
 
 	myUUID, err := job.AddWorker(fileName, job.Palindrome, fbClient, ctx)
 	if err != nil {
