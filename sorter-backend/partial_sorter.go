@@ -2,7 +2,6 @@ package sorter_backend
 
 import (
 	"context"
-	"io"
 	"log"
 	"os"
 	"sort"
@@ -139,7 +138,7 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 	newObjectName := fileName + "-" + strconv.Itoa(chunkIndex)
 	resultObj := bkt.Object(newObjectName)
 	w := resultObj.NewWriter(ctx)
-	_, err = io.WriteString(w, result)
+	_, err = w.Write([]byte(result))
 	if err != nil {
 		log.Fatal("Writing obj failed", err)
 		job.UpdateWorker(fileName, myUUID, job.Failed, fbClient, ctx)
