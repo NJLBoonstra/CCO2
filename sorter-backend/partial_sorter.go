@@ -2,6 +2,7 @@ package sorter_backend
 
 import (
 	"context"
+	"io/ioutil"
 	"log"
 	"os"
 	"sort"
@@ -49,7 +50,7 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 	}
 	defer fbClient.Close()
 
-	myUUID, err := job.AddWorker(fileName, job.Palindrome, fbClient, ctx)
+	myUUID, err := job.AddWorker(fileName, job.Sorter, fbClient, ctx)
 	if err != nil {
 		log.Printf("could not add worker %v", err)
 		return err
@@ -65,16 +66,19 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 		EOF = true
 	}
 
-	chunk_bytes := make([]byte, chunkSize)
+	// chunk_bytes := make([]byte, chunkSize)
 	overRead := 0
 
 	chunk_reader, err := obj.NewRangeReader(ctx, int64(chunkSize*chunkIndex), int64(chunkSize))
 	check(err, "Reader creation failed for obj")
-	_, err = chunk_reader.Read(chunk_bytes)
+	slurp, err := ioutil.ReadAll(chunk_reader)
 	check(err, "Reading obj failed")
 	chunk_reader.Close()
 
-	chunk_string := string(chunk_bytes)
+	log.Printf("chunkIndex: %v. chunkSize: %v. Bytes read: %v", chunkIndex, chunkSize, 1)
+	log.Printf("int64(chunkSize) = %v", int64(chunkSize))
+
+	chunk_string := string(slurp)
 
 	firstNL := 0
 	if chunkIndex != 0 {
@@ -87,12 +91,11 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 	lastNL := len(chunk_string)
 
 	if !EOF {
-		margin_bytes := make([]byte, marginSize)
 		margin_reader, err := obj.NewRangeReader(ctx, int64(chunkSize*(chunkIndex+1)), int64(marginSize))
 		check(err, "Reader creation failed for obj")
-		_, err = margin_reader.Read(margin_bytes)
+		margin_bytes, err := ioutil.ReadAll(margin_reader)
 		check(err, "Reading obj failed")
-		margin_reader.Close()
+		defer margin_reader.Close()
 
 		margin_string := string(margin_bytes)
 		chunk_string += margin_string
@@ -106,9 +109,9 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 				EOF = true
 				margin_reader, err = obj.NewRangeReader(ctx, offset, int64(marginSize))
 				check(err, "Could not create a NewRangeReader")
-				_, err = margin_reader.Read(margin_bytes)
+				margin_bytes, err = ioutil.ReadAll(margin_reader)
 				check(err, "Reading obj in iteration failed")
-				margin_reader.Close()
+				defer margin_reader.Close()
 				margin_string = string(margin_bytes)
 				lastNL = int(objectSize)
 				chunk_string += margin_string
@@ -116,9 +119,9 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 			}
 			margin_reader, err = obj.NewRangeReader(ctx, int64((chunkIndex+1)*chunkSize+marginSize*overRead), int64(marginSize))
 			check(err, "Could not create a NewRangeReader")
-			_, err = margin_reader.Read(margin_bytes)
+			margin_bytes, err = ioutil.ReadAll(margin_reader)
 			check(err, "Reading obj in iteration failed")
-			margin_reader.Close()
+			defer margin_reader.Close()
 			margin_string = string(margin_bytes)
 			lastNL = strings.Index(margin_string, "\n")
 			chunk_string += margin_string
