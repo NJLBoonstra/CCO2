@@ -1,12 +1,13 @@
 <script lang="ts">
     import "../../app.css"
     import { page } from "$app/stores";
-    import { WorkerState, WorkerStateToString, WorkerType, WorkerTypeToString, type Job, type PalindromeResult, type WorkerTypeState } from "$lib/job";
+    import { WorkerState, WorkerStateToString, WorkerTypeToString, type Job, type PalindromeResult, type WorkerTypeState } from "$lib/job";
 
     export let jobStatus: Job;
 
-    console.log(jobStatus.created?.valueOf());
-    console.log(jobStatus.palindromeFinish?.valueOf());
+    let createdDate: Date = new Date(jobStatus.created ?? 0);
+    let sorterDate: Date = new Date(jobStatus.sortFinish ?? 0);
+    let palinDate: Date = new Date(jobStatus.palindromeFinish ?? 0);
 
     let workerStatus: WorkerTypeState[] = [];
 
@@ -28,12 +29,15 @@
     <div>
         <p>Status for job '{$page.params.id}': {WorkerStateToString(jobStatus.state ?? WorkerState.Failed)}</p>
         <p>Job information:</p>
-        <p>Created: {jobStatus.created}</p>
-        {#if jobStatus.sortFinish}
-            <p>Sorting finished @ {jobStatus.sortFinish.toLocaleString()}</p>
+        <p>Created: {createdDate.toLocaleString()}</p>
+        {#if sorterDate.valueOf() > 0}
+            <p>Sorting finished @ {sorterDate.toLocaleString()}</p>
         {/if}
-        {#if jobStatus.palindromeFinish}
-            <p>Finding palindromes finished @ {jobStatus.palindromeFinish}</p>
+        {#if palinDate.valueOf() > 0}
+            <p>Finding palindromes finished @ {palinDate.toLocaleString()}</p>
+        {/if}
+        {#if palindromeResult && palindromeResult.jobId !== ""}
+            <p>The file contains {palindromeResult.palindromes} palindromes and the longest is {palindromeResult.longestPalindrome} characters.</p>
         {/if}
         <table>
             <thead>
@@ -51,9 +55,6 @@
                 {/each}
             </tbody>
         </table>
-        {#if palindromeResult && palindromeResult.jobId !== ""}
-            <p>The file contains {palindromeResult.palindromes} palindromes and the longest is {palindromeResult.longestPalindrome} characters.</p>
-        {/if}
     </div>
 {/if}
 
@@ -62,6 +63,7 @@
     div {
         display: flex;
         flex-flow: column wrap;
+        max-height: 100%;
     }
     table {
         text-align: left;
