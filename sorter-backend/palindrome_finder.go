@@ -2,6 +2,7 @@ package sorter_backend
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -10,6 +11,7 @@ import (
 	job "cco.bn.edu/shared"
 	"cloud.google.com/go/firestore"
 	"cloud.google.com/go/storage"
+	"github.com/google/uuid"
 )
 
 func FindPalindromes(ctx context.Context, e job.GCSEvent) error {
@@ -31,15 +33,12 @@ func FindPalindromes(ctx context.Context, e job.GCSEvent) error {
 	defer fbClient.Close()
 
 	jobID := strings.Split(chunkFileName, "/")[0]
-	myUUID, err := job.AddWorker(jobID, job.Palindrome, fbClient, ctx)
-	if err != nil {
-		log.Printf("could not add worker %v", err)
-		return err
-	}
 
 	bkt := client.Bucket(bucketName)
 	obj := bkt.Object(chunkFileName)
-	// attrs, err := obj.Attrs(ctx)
+	attrs, _ := obj.Attrs(ctx)
+	myUUID, err := uuid.Parse(attrs.Metadata["palindromeWorkerID"])
+	check(err, fmt.Sprintf("cannot parse palindromeWorkerID: %v", attrs.Metadata["palindromeWorkerID"]))
 
 	if err != nil {
 		log.Printf("Could not read object attributes: %v", err)
@@ -69,7 +68,7 @@ func FindPalindromes(ctx context.Context, e job.GCSEvent) error {
 	str := string(buffer)
 	words := strings.Split(str, " ")
 	for _, w := range words {
-		w = strings.Trim(w, " \n")
+		w = strings.Trim(w, "\t \n")
 
 		if len(w) > 0 && CheckPalindrome(w) {
 			palindromes++
