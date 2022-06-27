@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bufio"
+	"fmt"
 	"log"
 	"os"
 	"sort"
@@ -15,8 +15,14 @@ func sort_lines(s string) string {
 }
 
 func main() {
-	chunkIndex := 152060
-	chunkSize := 1
+	for i := 0; i < 16; i++ {
+		partial_sort(i)
+	}
+}
+
+func partial_sort(index int) {
+	chunkIndex := index
+	chunkSize := 10000
 	marginSize := 128
 	overRead := 0
 	f, err := os.Open("alice29.txt")
@@ -26,6 +32,9 @@ func main() {
 
 	EOF := false
 
+	chunkOffset := chunkSize * chunkIndex
+	chunkRange := chunkSize * (chunkIndex + 1)
+
 	if int64((chunkIndex+1)*chunkSize+marginSize) >= fileSize {
 		log.Println("chunk larger than file.")
 		chunkSize = int(fileSize) - chunkIndex*chunkSize - 1
@@ -34,11 +43,10 @@ func main() {
 	}
 
 	chunk_bytes := make([]byte, chunkSize)
-	reader := bufio.NewReader()
 
 	println("chunkbytes: ", len(chunk_bytes))
 
-	_, err = reader.Read(chunk_bytes, int64(chunkIndex*chunkSize))
+	_, err = f.ReadAt(chunk_bytes, int64(chunkOffset))
 	if err != nil {
 		log.Fatal("read failed ", err)
 	}
@@ -56,7 +64,7 @@ func main() {
 
 	if !EOF {
 		margin_bytes := make([]byte, marginSize)
-		_, err := f.ReadAt(margin_bytes, int64((chunkIndex+1)*chunkSize))
+		_, err := f.ReadAt(margin_bytes, int64(chunkRange))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -65,7 +73,7 @@ func main() {
 		lastNL = strings.Index(margin_string, "\n")
 		for lastNL == -1 {
 			overRead++
-			offset := int64((chunkIndex+1)*chunkSize + marginSize*overRead)
+			offset := int64(chunkRange + marginSize*overRead)
 			log.Println("margin needs to be extended")
 			if offset+int64(marginSize) > fileSize {
 				log.Println("EOF reached")
@@ -98,6 +106,6 @@ func main() {
 	println("lastNl: ", lastNL)
 	cut_str := chunk_string[firstNL:lastNL]
 	r1 := []byte(sort_lines(cut_str))
-	err = os.WriteFile("result.txt", r1, 0644)
+	err = os.WriteFile("results/result"+fmt.Sprint(chunkIndex)+".txt", r1, 0644)
 	f.Close()
 }

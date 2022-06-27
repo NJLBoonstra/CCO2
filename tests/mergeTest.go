@@ -3,6 +3,7 @@ package main
 import (
 	"io/ioutil"
 	"log"
+	"os"
 	"sort"
 	"strings"
 )
@@ -44,7 +45,7 @@ func Merge(s1, s2 []string) []string {
 
 func main() {
 
-	dir := "./textfiles/"
+	dir := "./results/"
 	files, err := ioutil.ReadDir(dir)
 
 	if len(files) == 1 {
@@ -67,5 +68,6 @@ func main() {
 		chunks = chunks[:len(chunks)-1]
 	}
 
-	print(strings.Join(chunks[0], "\n"))
+	result := strings.Join(chunks[0], "\n")
+	err = os.WriteFile("results/merge.txt", []byte(result), 0644)
 }
