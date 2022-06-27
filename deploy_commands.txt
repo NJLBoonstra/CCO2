@@ -6,4 +6,4 @@ gcloud functions deploy MergeSort --region europe-west1 --trigger-topic reduceJo
 
 gcloud functions deploy JobRequest --trigger-http --runtime go116 --region europe-west1 --env-vars-file .env.yaml
 
-gcloud functions deploy FindPalindromes --region europe-west1 --trigger-topic palindromeJobs --runtime go116 --env-vars-file .env.yaml
+gcloud functions deploy FindPalindromes --trigger-event google.storage.object.finalize --region europe-west1 --trigger-resource sort-chunks --runtime go116 --env-vars-file .env.yaml
