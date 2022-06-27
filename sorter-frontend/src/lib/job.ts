@@ -21,6 +21,9 @@ export type WorkerTypeState = {
 export type Job = {
 	id?: string,
 	state?: WorkerState,
+    created?: string,
+    sortFinish?: string,
+    palindromeFinish?: string,
 	workers?: { [id: string]: WorkerTypeState},
     error?: string,
 };

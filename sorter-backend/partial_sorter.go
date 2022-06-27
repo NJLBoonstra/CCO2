@@ -13,6 +13,7 @@ import (
 	"cloud.google.com/go/firestore"
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
+	"github.com/google/uuid"
 	"google.golang.org/api/iterator"
 )
 
@@ -36,6 +37,8 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 	fileName := m.Attributes["jobID"]
 	chunkBucket := m.Attributes["chunkBucket"]
 	resultBucket := m.Attributes["resultBucket"]
+	myUUID, err := uuid.Parse(m.Attributes["workerID"])
+	check(err, "cannot parse uuid")
 	chunkSize, err := strconv.Atoi(m.Attributes["chunkSize"])
 	check(err, "Could not convert CHUNK_SIZE to int")
 	chunkIndex, err := strconv.Atoi(m.Attributes["chunkIdx"])
@@ -53,12 +56,6 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 		return err
 	}
 	defer fbClient.Close()
-
-	myUUID, err := job.AddWorker(fileName, job.Sorter, fbClient, ctx)
-	if err != nil {
-		log.Printf("could not add worker %v", err)
-		return err
-	}
 
 	bkt := client.Bucket(bucketName)
 	obj := bkt.Object(fileName)
@@ -150,6 +147,24 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 		job.UpdateWorker(fileName, myUUID, job.Failed, fbClient, ctx)
 	}
 	w.Close()
+
+	palindromeWorkerUUID, err := job.AddWorker(fileName, job.Palindrome, fbClient, ctx)
+	if err != nil {
+		log.Printf("could not add worker %v", err)
+		return err
+	}
+
+	resultAttrs, err := resultObj.Attrs(ctx)
+	check(err, "cannot fetch resultObj attributes")
+	resultObj = resultObj.If(storage.Conditions{MetagenerationMatch: resultAttrs.Metageneration})
+	resultAttrsUpdate := storage.ObjectAttrsToUpdate{
+		Metadata: map[string]string{
+			"palindromeWorkerID": palindromeWorkerUUID.String(),
+		},
+	}
+
+	_, err = resultObj.Update(ctx, resultAttrsUpdate)
+	check(err, "could not update chunk object attributes!")
 
 	err = job.UpdateWorker(fileName, myUUID, job.Completed, fbClient, ctx)
 	if err != nil {

@@ -91,7 +91,7 @@ func MergeSort(ctx context.Context, m job.MergePubSub) error {
 		str_arr := strings.Split(string(slurp), "\n")
 		chunks = append(chunks, str_arr)
 
-		err = obj.Delete(ctx)
+		// err = obj.Delete(ctx)
 		if err != nil {
 			log.Print("could not delete chunk:", err)
 		}

@@ -38,7 +38,7 @@ func main() {
 
 	println("chunkbytes: ", len(chunk_bytes))
 
-	_, err = f.ReadAt(chunk_bytes, int64(chunkIndex*chunkSize))
+	_, err = reader.Read(chunk_bytes, int64(chunkIndex*chunkSize))
 	if err != nil {
 		log.Fatal("read failed ", err)
 	}

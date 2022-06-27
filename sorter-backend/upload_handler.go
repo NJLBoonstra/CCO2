@@ -116,9 +116,15 @@ func HandleUpload(ctx context.Context, e job.GCSEvent) error {
 
 	// Publish tasks for each chunk
 	for i := 0; i < chunks; i++ {
+		workerID, err := job.AddWorker(fileName, job.Sorter, fbClient, ctx)
+		if err != nil {
+			log.Printf("could not add worker %v", err)
+			return err
+		}
 		task := &pubsub.Message{
 			Attributes: map[string]string{
 				"jobID":        j.ID,
+				"workerID":     workerID.String(),
 				"chunkIdx":     strconv.Itoa(i),
 				"bucket":       bucketName,
 				"resultBucket": resultBucket,
@@ -130,20 +136,15 @@ func HandleUpload(ctx context.Context, e job.GCSEvent) error {
 			Data: js,
 		}
 
-		results := []pubsub.PublishResult{
-			*psClient.Topic("sortJobs").Publish(ctx, task),
-			*psClient.Topic("palindromeJobs").Publish(ctx, task),
+		r := *psClient.Topic("sortJobs").Publish(ctx, task)
+
+		msgId, err := r.Get(ctx)
+		if err != nil {
+			log.Printf("Could not publish message: %v", err)
+			return err
 		}
 
-		for _, r := range results {
-			msgId, err := r.Get(ctx)
-			if err != nil {
-				log.Printf("Could not publish message: %v", err)
-				return err
-			}
-
-			log.Printf("Chunk %v, published message: %v", i, msgId)
-		}
+		log.Printf("Chunk %v, published message: %v", i, msgId)
 
 	}
 	return nil
