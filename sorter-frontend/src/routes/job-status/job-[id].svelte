@@ -92,8 +92,10 @@
         height: 20px;
         width: 100%;
         background: rgb(180, 180, 180);
+        border-radius: 20px;
     }
     .progress {
+        border-radius: 20px;
         display: flex;
         height: 20px;
         background: rgb(181, 255, 172);

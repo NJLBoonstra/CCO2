@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	job "cco.bn.edu/shared"
 	"cloud.google.com/go/firestore"
@@ -111,6 +112,8 @@ func FindPalindromes(ctx context.Context, e job.GCSEvent) error {
 			sum += v.Palindromes
 		}
 		job.UpdatePalindromeJobResult(jobID, sum, longest, fbClient, ctx)
+
+		job.SetFinish(jobID, time.Now(), "palindrome", fbClient, ctx)
 	}
 
 	return nil

@@ -186,6 +186,26 @@ func SetState(jobID string, ws WorkerState, fbClient *firestore.Client, ctx cont
 	return err
 }
 
+func SetFinish(jobID string, ts time.Time, jobType string, fbClient *firestore.Client, ctx context.Context) error {
+	docRef := fbClient.Collection(CollectionJobName).Doc(jobID)
+	_, err := docRef.Get(ctx)
+	if err != nil && status.Code(err) == codes.NotFound {
+		return errors.New("cannot update a non-existing Job")
+	}
+
+	if jobType == "sort" {
+		_, err = docRef.Update(ctx, []firestore.Update{
+			{Path: "SortFinish", Value: ts},
+		})
+	} else if jobType == "palindrome" {
+		_, err = docRef.Update(ctx, []firestore.Update{
+			{Path: "PalindromeFinish", Value: ts},
+		})
+	}
+
+	return err
+}
+
 func AllWorkerTypeStates(jobID string, wts WorkerTypeState, fbClient *firestore.Client, ctx context.Context) (bool, error) {
 	docRef := fbClient.Collection(CollectionJobName).Doc(jobID)
 	j, err := docRef.Get(ctx)
