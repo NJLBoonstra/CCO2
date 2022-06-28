@@ -88,6 +88,11 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 
 	// This chunk contains no NL
 	if firstNL == -1 {
+		err = job.UpdateWorker(fileName, myUUID, job.Completed, fbClient, ctx)
+		if err != nil {
+			log.Fatalf("Could not update job: %v", err)
+			return err
+		}
 		return nil
 	}
 

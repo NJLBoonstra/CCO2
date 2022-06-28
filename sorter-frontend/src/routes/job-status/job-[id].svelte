@@ -38,17 +38,17 @@
         <p>Status for job '{jobStatus.id}': {WorkerStateToString(jobStatus.state ?? WorkerState.Failed)}</p>
         <div class="bar">
             <div class="progress" style="width: {percentComplete}%">
-                <p class="percentage">{percentComplete}%</p>
+                <p class="percentage">{percentComplete.toFixed(0)}%</p>
             </div>
         </div>
         <p>Job information:</p>
         <p>Created: {createdDate.toLocaleString("en-GB")}</p>
-        <p>Sorter runtime: {sorterRuntime}s</p>
-        <p>Palindrome runtime: {palinRuntime}s</p>
         {#if sorterDate.valueOf() > 0}
-            <p>Sorting finished @ {sorterDate.toLocaleString("en-GB")}</p>
+        <p>Sorter runtime: {sorterRuntime}s</p>
+        <p>Sorting finished @ {sorterDate.toLocaleString("en-GB")}</p>
         {/if}
         {#if palinDate.valueOf() > 0}
+            <p>Palindrome runtime: {palinRuntime}s</p>
             <p>Finding palindromes finished @ {palinDate.toLocaleString("en-GB")}</p>
         {/if}
         {#if palindromeResult && palindromeResult.jobId !== ""}
