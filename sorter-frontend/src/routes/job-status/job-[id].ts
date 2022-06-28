@@ -8,7 +8,7 @@ export async function get({params}) {
     const jobID: string = params.id;
     const jobStatus: Job = await getJobStatus(jobID);
 
-    let palindromeResult: PalindromeResult = await getPalindromeResult(jobID);
+    const palindromeResult: PalindromeResult = await getPalindromeResult(jobID);
 
 
     // let 

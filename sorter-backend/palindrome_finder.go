@@ -101,9 +101,10 @@ func FindPalindromes(ctx context.Context, e job.GCSEvent) error {
 		// Last chunk, do something with merging perhaps
 
 		res, _ := job.GetPalindromeResult(jobID, fbClient, ctx)
+		workerResults := res.PalindromeWorkerResult
 		longest := 0
 		sum := 0
-		for _, v := range res {
+		for _, v := range workerResults {
 			if v.LongestPalindrome > longest {
 				longest = v.LongestPalindrome
 			}

@@ -8,13 +8,16 @@
     <title>BeanHouse Sorter</title>
 </svelte:head>
 
-<h1>Welcome,</h1>
 
-<p>Use the buttons below to either check the status of your job, or to create a new job.</p>
-
-<div>
-    <a href="/job-status">Job Status</a>
-    <a href="/new-job">New Job</a>
+<div class="main-container">
+    <h1>BeanHouse's Sorting as a Service</h1>
+    
+    <p>Use the buttons below to either check the status of your job, or to create a new job.</p>
+    
+    <div class="buttons">
+        <a href="/job-status">Job Status</a>
+        <a href="/new-job">New Job</a>
+    </div>
 </div>
 
 <style>
@@ -25,12 +28,16 @@
     p {
         text-align: center;
     }
-    div {
+    .main-container {
+        padding: 30px;
+    }
+    .buttons {
+        font-weight: bold;
         display: flex;
-        gap: 50px;
         flex-flow: row nowrap;
         align-items: center;
         justify-content: center;
+        gap: 50px;
     }
     a {
         text-align: center;
@@ -50,14 +57,12 @@
     }
     @keyframes abackground {
         0% {background-position: 0% 50%;}
-        50% {background-position: 100% 50%;}
-        100% {background-position: 0% 50%;}
+        100% {background-position: 100% 50%;}
     }
     a:hover {
         animation-name: abackground;
-        animation-duration: 2s;
-        animation-iteration-count: infinite;
-        animation-timing-function: ease-in-out;
-        animation-direction: alternate;
+        animation-fill-mode: forwards;
+        animation-duration: 1s;
+        animation-direction: normal;
     }
 </style>
