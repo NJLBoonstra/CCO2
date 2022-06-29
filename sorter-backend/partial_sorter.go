@@ -147,6 +147,9 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 
 	result := sort_lines(cut_str)
 
+	// Delete uploaded file
+	_ = obj.Delete(ctx)
+
 	// store sorting result
 	newObjectName := fileName + "/" + strconv.Itoa(chunkIndex)
 	chunkBkt := client.Bucket(chunkBucket)

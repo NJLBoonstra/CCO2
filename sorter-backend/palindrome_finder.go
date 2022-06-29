@@ -13,6 +13,7 @@ import (
 	"cloud.google.com/go/firestore"
 	"cloud.google.com/go/storage"
 	"github.com/google/uuid"
+	"google.golang.org/api/iterator"
 )
 
 func FindPalindromes(ctx context.Context, e job.GCSEvent) error {
@@ -114,6 +115,33 @@ func FindPalindromes(ctx context.Context, e job.GCSEvent) error {
 		job.UpdatePalindromeJobResult(jobID, sum, longest, fbClient, ctx)
 
 		job.SetFinish(jobID, time.Now(), "palindrome", fbClient, ctx)
+
+		sortDone, _ := job.AllWorkerTypeStates(jobID, job.WorkerTypeState{Type: job.SorterReduce, State: job.Completed}, fbClient, ctx)
+
+		if sortDone {
+			// Delete all chunks, cuz we're always gonna be the latest worker to finish
+			q := &storage.Query{
+				Prefix: jobID,
+			}
+			chunks := bkt.Objects(ctx, q)
+
+			for {
+				o, err := chunks.Next()
+
+				if err == iterator.Done {
+					break
+				}
+
+				if err != nil {
+					log.Fatalf("cannot iterate: %v", err)
+				}
+
+				err = bkt.Object(o.Name).Delete(ctx)
+				if err != nil {
+					log.Printf("could not delete file: %v", err)
+				}
+			}
+		}
 	}
 
 	return nil

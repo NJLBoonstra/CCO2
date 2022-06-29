@@ -15,7 +15,7 @@ def find_palindromes(filename: str):
 
     word: str
     for word in buffer:
-        word = word.strip().strip("\n")
+        word = word.strip().strip(" \n")
 
         if len(word) > 0 and word == word[::-1]:
             palindromes += 1

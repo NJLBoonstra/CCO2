@@ -101,6 +101,20 @@ export async function getJobStatus(jobID: string): Promise<Job> {
 
 // }
 
+export async function generateSignedDownloadUrl(filename: string): Promise<{filename: string, url: string}> {
+    const options: gcs.GetSignedUrlConfig = {
+        action: "read",
+        expires: 10,
+    }
+    const [url] = await storage.bucket(bucketName).file(filename).getSignedUrl(options);
+    const fname = storage.bucket(bucketName).file(filename).metadata?.["original-filename"] ?? "";
+
+    return {
+        filename: fname,
+        url: url,
+    }
+}
+
 export async function generateSignedUploadUrl(filename: string): Promise<[string, {name: string, value: string}[]]> {
     const redirectURL: string = appOrigin + "/upload-" + filename;
     const options: gcs.GenerateSignedPostPolicyV4Options = {
