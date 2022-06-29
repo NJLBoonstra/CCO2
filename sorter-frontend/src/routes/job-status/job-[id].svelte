@@ -9,16 +9,24 @@
     let sorterDate: Date = new Date(jobStatus.sortFinish ?? 0);
     let palinDate: Date = new Date(jobStatus.palindromeFinish ?? 0);
 
-    let workerStatus: WorkerTypeState[] = [];
+    let sorterRuntime: number = (sorterDate.getTime() - createdDate.getTime()) / 1000
+    let palinRuntime: number = (palinDate.getTime() - createdDate.getTime()) / 1000
 
+    
+    let workerStatus: WorkerTypeState[] = [];
+    
     for (const key in jobStatus.workers) {
         if (Object.prototype.hasOwnProperty.call(jobStatus.workers, key)) {
             const element = jobStatus.workers[key];
             workerStatus.push(element);
         }
     }
-
-
+    
+    let workersComplete = 0;
+    for (let worker of workerStatus) {
+        if (worker.state == 3) workersComplete++
+    }
+    let percentComplete = (workersComplete/workerStatus.length) * 100
     export let palindromeResult: PalindromeResult | undefined;
     
 </script>
@@ -27,14 +35,21 @@
     We encountered the following error: {jobStatus.error}!
 {:else}
     <div>
-        <p>Status for job '{$page.params.id}': {WorkerStateToString(jobStatus.state ?? WorkerState.Failed)}</p>
+        <p>Status for job '{jobStatus.id}': {WorkerStateToString(jobStatus.state ?? WorkerState.Failed)}</p>
+        <div class="bar">
+            <div class="progress" style="width: {percentComplete}%">
+                <p class="percentage">{percentComplete.toFixed(0)}%</p>
+            </div>
+        </div>
         <p>Job information:</p>
-        <p>Created: {createdDate.toLocaleString()}</p>
+        <p>Created: {createdDate.toLocaleString("en-GB")}</p>
         {#if sorterDate.valueOf() > 0}
-            <p>Sorting finished @ {sorterDate.toLocaleString()}</p>
+        <p>Sorter runtime: {sorterRuntime}s</p>
+        <p>Sorting finished @ {sorterDate.toLocaleString("en-GB")}</p>
         {/if}
         {#if palinDate.valueOf() > 0}
-            <p>Finding palindromes finished @ {palinDate.toLocaleString()}</p>
+            <p>Palindrome runtime: {palinRuntime}s</p>
+            <p>Finding palindromes finished @ {palinDate.toLocaleString("en-GB")}</p>
         {/if}
         {#if palindromeResult && palindromeResult.jobId !== ""}
             <p>The file contains {palindromeResult.palindromes} palindromes and the longest is {palindromeResult.longestPalindrome} characters.</p>
@@ -70,5 +85,25 @@
     }
     thead {
         text-align: left;
+    }
+    .bar {
+        margin-top: 10px;
+        margin-bottom: 10px;
+        height: 20px;
+        width: 100%;
+        background: rgb(180, 180, 180);
+        border-radius: 20px;
+    }
+    .progress {
+        border-radius: 20px;
+        display: flex;
+        height: 20px;
+        background: rgb(181, 255, 172);
+        justify-content: center;
+    }
+    .percentage{
+        text-align: center;
+        position: absolute;
+        left: 50%;
     }
 </style>

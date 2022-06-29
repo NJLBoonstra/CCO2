@@ -82,14 +82,14 @@ func UpdatePalindromeJobResult(jobID string, palindromes int, longest int, fbCli
 	return err
 }
 
-func GetPalindromeResult(jobID string, fbClient *firestore.Client, ctx context.Context) (map[string]PalindromeResult, error) {
+func GetPalindromeResult(jobID string, fbClient *firestore.Client, ctx context.Context) (PalindromeJob, error) {
 	res := PalindromeJob{}
 	data, err := fbClient.Collection(CollectionPalindrome).Doc(jobID).Get(ctx)
 	if err != nil {
-		return res.PalindromeWorkerResult, err
+		return res, err
 	}
 
 	err = data.DataTo(&res)
 
-	return res.PalindromeWorkerResult, err
+	return res, err
 }

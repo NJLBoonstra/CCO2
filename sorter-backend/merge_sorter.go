@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"cloud.google.com/go/firestore"
 	"cloud.google.com/go/storage"
@@ -111,6 +112,12 @@ func MergeSort(ctx context.Context, m job.MergePubSub) error {
 	err = job.UpdateWorker(origFileName, myUUID, job.Completed, fbClient, ctx)
 	if err != nil {
 		log.Printf("Could not update job: %v", err)
+		return err
+	}
+
+	err = job.SetFinish(origFileName, time.Now(), "sort", fbClient, ctx)
+	if err != nil {
+		log.Printf("could not set sort job finish time: %v", err)
 		return err
 	}
 
