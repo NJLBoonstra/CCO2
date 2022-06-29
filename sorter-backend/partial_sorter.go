@@ -88,7 +88,7 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 	// if the first chunk is sorted start at first charachter, else start at first found NL
 	firstNL := 0
 	if chunkIndex != 0 {
-		firstNL = strings.Index(chunk_string, "\n")
+		firstNL = strings.Index(chunk_string[:chunkSize], "\n")
 	}
 
 	// this chunk contains no NL -> another sorter will process this chunk by extending its margin
@@ -138,11 +138,11 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 		lastNL += chunkSize + marginSize*overRead
 	}
 
+	// if the EOF was reached, set last NL to last character
 	if EOF {
 		lastNL = len(chunk_string)
 	}
 
-	// TODO make lastNL relative to the chunk
 	cut_str := chunk_string[firstNL:lastNL]
 
 	result := sort_lines(cut_str)

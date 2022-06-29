@@ -104,7 +104,7 @@ export async function getJobStatus(jobID: string): Promise<Job> {
 export async function generateSignedDownloadUrl(filename: string): Promise<{filename: string, url: string}> {
     const options: gcs.GetSignedUrlConfig = {
         action: "read",
-        expires: 10,
+        expires: 300,
     }
     const [url] = await storage.bucket(bucketName).file(filename).getSignedUrl(options);
     const fname = storage.bucket(bucketName).file(filename).metadata?.["original-filename"] ?? "";
@@ -118,7 +118,7 @@ export async function generateSignedDownloadUrl(filename: string): Promise<{file
 export async function generateSignedUploadUrl(filename: string): Promise<[string, {name: string, value: string}[]]> {
     const redirectURL: string = appOrigin + "/upload-" + filename;
     const options: gcs.GenerateSignedPostPolicyV4Options = {
-        expires: Date.now() + 15 * 60 * 1000,
+        expires: Date.now() + 300 * 60 * 1000,
         fields: {
             // "x-goog-meta-original-filename": "",
             "success_action_redirect": redirectURL,
@@ -132,7 +132,7 @@ export async function generateSignedUploadUrl(filename: string): Promise<[string
     const [response] = await storage.bucket(bucketName).file(filename)
                     .generateSignedPostPolicyV4(options);
 
-    let responseFields: {name: string, value: string}[] = [];
+    const responseFields: {name: string, value: string}[] = [];
 
     for (const n of Object.keys(response.fields)) {
         responseFields.push({name: n, value: response.fields[n]});
