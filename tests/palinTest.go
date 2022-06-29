@@ -7,29 +7,31 @@ import (
 )
 
 func main() {
-	f, _ := os.Open("/home/niels/CCO2/tests/alice29.txt")
+	buffer, _ := os.ReadFile("./results/result1.txt")
 
-	buffer := make([]byte, 1024*1024)
-
-	n, _ := f.Read(buffer)
 	palindromes := 0
 	longest_pal := 0
+	longest_par_str := ""
 
-	str := string(buffer[:n])
-	words := strings.Split(str, " ")
+	str := string(buffer)
+	lines := strings.Split(str, "\n")
 
-	for _, w := range words {
-		w = strings.Trim(w, " \n")
+	for _, l := range lines {
+		for _, w := range strings.Split(l, " ") {
+			w = strings.Trim(w, "\t \n")
 
-		if len(w) > 0 && CheckPalindrome(w) {
-			palindromes++
-			if len(w) > longest_pal {
-				longest_pal = len(w)
+			if len(w) > 0 && CheckPalindrome(w) {
+				palindromes++
+				if len(w) > longest_pal {
+					longest_pal = len(w)
+					longest_par_str = w
+				}
 			}
 		}
 	}
 
 	log.Printf("palins %v, longest %v", palindromes, longest_pal)
+	log.Println(longest_par_str)
 }
 
 func CheckPalindrome(word string) bool {

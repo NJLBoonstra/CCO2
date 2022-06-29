@@ -15,17 +15,17 @@ func sort_lines(s string) string {
 }
 
 func main() {
-	for i := 0; i < 16; i++ {
+	for i := 0; i < 5; i++ {
 		partial_sort(i)
 	}
 }
 
 func partial_sort(index int) {
 	chunkIndex := index
-	chunkSize := 10000
-	marginSize := 128
+	chunkSize := 4194304
+	marginSize := 64
 	overRead := 0
-	f, err := os.Open("alice29.txt")
+	f, err := os.Open("large_text.txt")
 
 	fi, _ := f.Stat()
 	fileSize := fi.Size()

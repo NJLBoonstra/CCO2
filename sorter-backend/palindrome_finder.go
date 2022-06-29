@@ -68,14 +68,17 @@ func FindPalindromes(ctx context.Context, e job.GCSEvent) error {
 	longest_pal := 0
 
 	str := string(buffer)
-	words := strings.Split(str, " ")
-	for _, w := range words {
-		w = strings.Trim(w, "\t \n")
+	lines := strings.Split(str, "\n")
 
-		if len(w) > 0 && CheckPalindrome(w) {
-			palindromes++
-			if len(w) > longest_pal {
-				longest_pal = len(w)
+	for _, l := range lines {
+		for _, w := range strings.Split(l, " ") {
+			w = strings.Trim(w, "\t \n")
+
+			if len(w) > 0 && CheckPalindrome(w) {
+				palindromes++
+				if len(w) > longest_pal {
+					longest_pal = len(w)
+				}
 			}
 		}
 	}
