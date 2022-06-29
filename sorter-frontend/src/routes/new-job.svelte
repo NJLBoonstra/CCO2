@@ -55,7 +55,7 @@
 </svelte:head>
 
 <div>
-    <p>Select a file to upload, or use the textbox to upload raw text (for debugging)</p>
+    <p>Select a file to upload</p>
     <form method="POST" bind:this={fileForm} action={postURL} enctype="multipart/form-data">
         {#each postFields as {name, value}}
             {#if name === "x-goog-meta-original-filename"}
@@ -67,10 +67,6 @@
 
         <div>
             <input type="file" name="file" on:change={onChange} bind:this={fileInput} accept=".txt,text/plain">
-            <div>
-                <!-- <label>Filename: <input type="text" bind:this={fileNameElement} bind:value={fileName} on:keyup={onChange}>.txt</label> -->
-                <textarea bind:value={fileText} on:keyup={onChange} bind:this={textArea} placeholder="Insert text here..."></textarea>
-            </div>
         </div>
         <div>
             <input type="button" value="Reset" on:click={resetForm} >
