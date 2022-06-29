@@ -3,6 +3,7 @@ env: standard
 
 env_variables:
   BUCKET_NAME: "boonstra-nieuwenhuijzen.appspot.com"
+  RESULT_BUCKET_NAME: "sort-finished"
   APP_ORIGIN: "https://boonstra-nieuwenhuijzen.appspot.com"
   CHUNK_SIZE: "33554432"
   URL_API: "https://europe-west1-boonstra-nieuwenhuijzen.cloudfunctions.net/JobRequest"

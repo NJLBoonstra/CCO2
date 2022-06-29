@@ -6,6 +6,7 @@ import { GoogleAuth, IdTokenClient } from "google-auth-library";
 
 const storage: gcs.Storage = new gcs.Storage();
 const bucketName: string = process.env.BUCKET_NAME ?? "cco";
+const resultBucketName: string = process.env.RESULT_BUCKET_NAME ?? "results";
 const appOrigin: string = process.env.APP_ORIGIN ?? "localhost"
 const urlAPI: string = process.env.URL_API ?? "";
 const auth = new GoogleAuth();
@@ -104,8 +105,8 @@ export async function generateSignedDownloadUrl(filename: string): Promise<{file
         action: "read",
         expires: expDate,
     }
-    const [url] = await storage.bucket(bucketName).file(filename).getSignedUrl(options);
-    const fname = storage.bucket(bucketName).file(filename).metadata?.["original-filename"] ?? "";
+    const [url] = await storage.bucket(resultBucketName).file(filename + "-sorted").getSignedUrl(options);
+    const fname = storage.bucket(resultBucketName).file(filename).metadata?.["original-filename"] ?? "";
 
     return {
         filename: fname,
