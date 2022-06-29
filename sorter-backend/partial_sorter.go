@@ -29,8 +29,8 @@ func check(e error, message string) {
 	}
 }
 
-// HelloPubSub consumes a Pub/Sub message.
 func PartialSort(ctx context.Context, m job.PubSubMessage) error {
+	// read all information from pubsub message
 	marginSize, err := strconv.Atoi(m.Attributes["marginSize"])
 	check(err, "Could not convert marginSize to int")
 	bucketName := m.Attributes["bucket"]
@@ -45,11 +45,13 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 	check(err, "Could not convert chunk index to int")
 	objectSize, err := strconv.Atoi(m.Attributes["objectSize"])
 	check(err, "Could not convert objectSize to int")
-	// read from cloud storage
+
+	// create GCS client
 	client, err := storage.NewClient(ctx)
 	check(err, "Client could not be created")
 	defer client.Close()
 
+	// create firestore client
 	fbClient, err := firestore.NewClient(ctx, os.Getenv("GOOGLE_CLOUD_PROJECT"))
 	if err != nil {
 		log.Fatalf("Could not create a Firestore client: %v", err)
@@ -57,75 +59,76 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 	}
 	defer fbClient.Close()
 
+	// create handle for relevant bucket and object
 	bkt := client.Bucket(bucketName)
 	obj := bkt.Object(fileName)
 
+	// helper-variable to store if the end of the object is reached
 	EOF := false
 
-	chunkOffset := chunkSize * chunkIndex
-	chunkRange := chunkSize * (chunkIndex + 1)
+	chunkStart := chunkSize * chunkIndex
+	chunkEnd := chunkSize * (chunkIndex + 1)
 
-	if (chunkIndex+1)*chunkSize+marginSize > objectSize {
+	// check if this reader will read over the file size -> adjust read size
+	if (chunkIndex+1)*chunkSize+marginSize >= objectSize {
 		chunkSize = objectSize - chunkIndex*chunkSize
+		marginSize = 0
 		EOF = true
 	}
 
-	// chunk_bytes := make([]byte, chunkSize)
-	overRead := 0
-
-	chunk_reader, err := obj.NewRangeReader(ctx, int64(chunkOffset), int64(chunkSize))
+	// read the chunk bytes and convert to string
+	chunk_reader, err := obj.NewRangeReader(ctx, int64(chunkStart), int64(chunkSize+marginSize))
 	check(err, "Reader creation failed for obj")
 	slurp, err := ioutil.ReadAll(chunk_reader)
 	check(err, "Reading obj failed")
-	chunk_reader.Close()
-
+	defer chunk_reader.Close()
 	chunk_string := string(slurp)
+	margin_string := string(slurp[chunkSize : chunkSize+marginSize])
 
+	// if the first chunk is sorted start at first charachter, else start at first found NL
 	firstNL := 0
 	if chunkIndex != 0 {
 		firstNL = strings.Index(chunk_string, "\n")
 	}
 
-	// This chunk contains no NL
+	// this chunk contains no NL -> another sorter will process this chunk by extending its margin
 	if firstNL == -1 {
 		err = job.UpdateWorker(fileName, myUUID, job.Completed, fbClient, ctx)
-		if err != nil {
-			log.Fatalf("Could not update job: %v", err)
-			return err
-		}
-		return nil
+		check(err, "Could not update job")
 	}
 
+	// initialize the last NL variable
 	lastNL := len(chunk_string)
 
+	// if we have not reached the end of the file, search for the first NL in the margin
 	if !EOF {
-		margin_reader, err := obj.NewRangeReader(ctx, int64(chunkRange), int64(marginSize))
-		check(err, "Reader creation failed for obj")
-		margin_bytes, err := ioutil.ReadAll(margin_reader)
-		check(err, "Reading obj failed")
-		defer margin_reader.Close()
+		// helper-variable to determine the number of times we had to extend the margin to find a NL
+		overRead := 0
 
-		margin_string := string(margin_bytes)
-		chunk_string += margin_string
+		// find first NL in margin
 		lastNL = strings.Index(margin_string, "\n")
+
+		// if no NL found in margin, extend the margin
 		for lastNL == -1 {
 			overRead++
-			offset := int64(chunkRange + marginSize*overRead)
+			offset := int64(chunkEnd + marginSize*overRead)
+
+			// if the extended margin surpasses the object size, read only remaining bytes
 			if offset+int64(marginSize) > int64(objectSize) {
-				marginSize = int(objectSize) - int(offset)
 				EOF = true
-				margin_reader, err = obj.NewRangeReader(ctx, offset, int64(marginSize))
+				marginSize = int(objectSize) - int(offset)
+				margin_reader, err := obj.NewRangeReader(ctx, offset, int64(marginSize))
 				check(err, "Could not create a NewRangeReader")
-				margin_bytes, err = ioutil.ReadAll(margin_reader)
+				margin_bytes, err := ioutil.ReadAll(margin_reader)
 				check(err, "Reading obj in iteration failed")
 				defer margin_reader.Close()
 				margin_string = string(margin_bytes)
 				chunk_string += margin_string
 				break
 			}
-			margin_reader, err = obj.NewRangeReader(ctx, int64(chunkRange+marginSize*overRead), int64(marginSize))
+			margin_reader, err := obj.NewRangeReader(ctx, int64(chunkEnd+marginSize*overRead), int64(marginSize))
 			check(err, "Could not create a NewRangeReader")
-			margin_bytes, err = ioutil.ReadAll(margin_reader)
+			margin_bytes, err := ioutil.ReadAll(margin_reader)
 			check(err, "Reading obj in iteration failed")
 			defer margin_reader.Close()
 			margin_string = string(margin_bytes)

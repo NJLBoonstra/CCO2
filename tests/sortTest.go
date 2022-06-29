@@ -32,25 +32,25 @@ func partial_sort(index int) {
 
 	EOF := false
 
-	chunkOffset := chunkSize * chunkIndex
-	chunkRange := chunkSize * (chunkIndex + 1)
+	chunkStart := chunkSize * chunkIndex
+	chunkEnd := chunkSize * (chunkIndex + 1)
 
 	if int64((chunkIndex+1)*chunkSize+marginSize) >= fileSize {
-		log.Println("chunk larger than file.")
-		chunkSize = int(fileSize) - chunkIndex*chunkSize - 1
-		log.Println("new chunksize: ", chunkSize)
+		chunkSize = int(fileSize) - chunkIndex*chunkSize
+		marginSize = 0
 		EOF = true
 	}
 
-	chunk_bytes := make([]byte, chunkSize)
+	chunk_bytes := make([]byte, chunkSize+marginSize)
 
 	println("chunkbytes: ", len(chunk_bytes))
 
-	_, err = f.ReadAt(chunk_bytes, int64(chunkOffset))
+	_, err = f.ReadAt(chunk_bytes, int64(chunkStart))
 	if err != nil {
 		log.Fatal("read failed ", err)
 	}
 	chunk_string := string(chunk_bytes)
+	margin_string := string(chunk_bytes[chunkSize : chunkSize+marginSize])
 
 	firstNL := 0
 	if chunkIndex != 0 {
@@ -63,23 +63,17 @@ func partial_sort(index int) {
 	lastNL := len(chunk_string)
 
 	if !EOF {
-		margin_bytes := make([]byte, marginSize)
-		_, err := f.ReadAt(margin_bytes, int64(chunkRange))
-		if err != nil {
-			log.Fatal(err)
-		}
-		margin_string := string(margin_bytes)
-		chunk_string += margin_string
 		lastNL = strings.Index(margin_string, "\n")
 		for lastNL == -1 {
-			overRead++
-			offset := int64(chunkRange + marginSize*overRead)
 			log.Println("margin needs to be extended")
+			overRead++
+			offset := int64(chunkEnd + marginSize*overRead)
+
 			if offset+int64(marginSize) > fileSize {
+				EOF = true
 				log.Println("EOF reached")
 				marginSize = int(fileSize) - int(offset)
-				margin_bytes = make([]byte, marginSize)
-				EOF = true
+				margin_bytes := make([]byte, marginSize)
 				_, err := f.ReadAt(margin_bytes, offset)
 				if err != nil {
 					log.Fatal(err)
@@ -88,6 +82,7 @@ func partial_sort(index int) {
 				chunk_string += margin_string
 				break
 			}
+			margin_bytes := make([]byte, marginSize)
 			_, err := f.ReadAt(margin_bytes, offset)
 			if err != nil {
 				log.Fatal(err)
