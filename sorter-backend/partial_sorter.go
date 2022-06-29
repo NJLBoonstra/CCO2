@@ -143,14 +143,11 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 		lastNL = len(chunk_string)
 	}
 
+	// determine final chunk based on NL
 	cut_str := chunk_string[firstNL:lastNL]
-
 	result := sort_lines(cut_str)
 
-	// Delete uploaded file
-	_ = obj.Delete(ctx)
-
-	// store sorting result
+	// store sorting result in folder
 	newObjectName := fileName + "/" + strconv.Itoa(chunkIndex)
 	chunkBkt := client.Bucket(chunkBucket)
 	resultObj := chunkBkt.Object(newObjectName)
@@ -162,11 +159,9 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 	}
 	w.Close()
 
+	// Add palindrome worker to firestore
 	palindromeWorkerUUID, err := job.AddWorker(fileName, job.Palindrome, fbClient, ctx)
-	if err != nil {
-		log.Printf("could not add worker %v", err)
-		return err
-	}
+	check(err, "could not add worker")
 
 	resultAttrs, err := resultObj.Attrs(ctx)
 	check(err, "cannot fetch resultObj attributes")
@@ -177,21 +172,19 @@ func PartialSort(ctx context.Context, m job.PubSubMessage) error {
 		},
 	}
 
+	// update status of current job in firestore
 	_, err = resultObj.Update(ctx, resultAttrsUpdate)
 	check(err, "could not update chunk object attributes!")
 
+	// update status of worker in firestore
 	err = job.UpdateWorker(fileName, myUUID, job.Completed, fbClient, ctx)
-	if err != nil {
-		log.Fatalf("Could not update job: %v", err)
-		return err
-	}
+	check(err, "Could not update job")
 
 	// determine if this is the last chunk
 	// if so, create pub/sub message for merging
 	allDone, _ := job.AllWorkerTypeStates(fileName, job.WorkerTypeState{Type: job.Sorter, State: job.Completed}, fbClient, ctx)
 
 	if allDone {
-		// Last chunk, do something with merging perhaps
 		job.SetState(fileName, job.Reducing, fbClient, ctx)
 
 		q := &storage.Query{
