@@ -99,6 +99,27 @@ type GCSEvent struct {
 	ResourceState string `json:"resourceState"`
 }
 
+func GetState(jobID string, fbClient *firestore.Client, ctx context.Context) (WorkerState, error) {
+	job := Job{}
+	if jobID == "" {
+		return Failed, errors.New("jobID cannot be an empty string")
+	}
+
+	data, err := fbClient.Collection(CollectionJobName).Doc(jobID).Get(ctx)
+
+	if err != nil && status.Code(err) == codes.NotFound {
+		job.Error = "Job with ID '" + jobID + "' not found"
+		return Failed, errors.New("Job with ID '" + jobID + "' not found")
+	}
+
+	err = data.DataTo(&job)
+	if err != nil {
+		return Failed, err
+	}
+
+	return job.State, nil
+}
+
 func Get(jobID string, fbClient *firestore.Client, ctx context.Context) (Job, error) {
 	job := Job{}
 	if jobID == "" {

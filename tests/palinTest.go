@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	f, _ := os.Open("/home/niels/CCO2/tests/test1.txt")
+	f, _ := os.Open("/home/niels/CCO2/tests/alice29.txt")
 
 	buffer := make([]byte, 1024*1024)
 
