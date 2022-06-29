@@ -11,6 +11,7 @@
 	} from '$lib/job';
 
 	export let jobStatus: Job;
+	export let url: string;
 
 	let createdDate: Date = new Date(jobStatus.created ?? 0);
 	let sorterDate: Date = new Date(jobStatus.sortFinish ?? 0);
@@ -43,6 +44,11 @@
 		<p>
 			Status for job '{jobStatus.id}': {WorkerStateToString(jobStatus.state ?? WorkerState.Failed)}
 		</p>
+		{#if url.length > 0}
+		<p>
+			<a href={url}>Download result</a>
+		</p>
+		{/if}
 		<div class="bar">
 			<div class="progress" style="width: {percentComplete}%">
 				<p class="percentage">{percentComplete.toFixed(0)}%</p>

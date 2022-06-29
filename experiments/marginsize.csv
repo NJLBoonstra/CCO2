@@ -1,6 +1,5 @@
-filesize: 100MB
-chunksize: 4MB
-
+#filesize: 100MB
+#chunksize: 4MB
 margin(bytes),sortTime(s)
 64,18.309
 64,17.007
@@ -11,4 +10,3 @@ margin(bytes),sortTime(s)
 256, 18.736
 256, 16.878
 256, 18.464
-

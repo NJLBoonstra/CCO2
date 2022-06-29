@@ -12,11 +12,11 @@ export async function get({params}) {
     let filename: string = "";
     let url: string = "";
 
-    // if (jobStatus.state === WorkerState.Completed) {
-    //     let r = await generateSignedDownloadUrl(jobID);
-    //     filename = r.filename;
-    //     url = r.url;
-    // }
+    if (jobStatus.state === WorkerState.Completed) {
+        let r = await generateSignedDownloadUrl(jobID);
+        filename = r.filename;
+        url = r.url;
+    }
     // let 
 
     return {

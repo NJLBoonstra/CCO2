@@ -32,8 +32,6 @@ export async function getPalindromeResult(jobID: string): Promise<PalindromeResu
     const response = await authReq.request<PalindromeResult>({url: reqURL.href });
     let data: PalindromeResult;
 
-    console.log(response)
-
     if (response.status === 200) {
         data = response.data;
     }
@@ -68,8 +66,6 @@ export async function getJobStatus(jobID: string): Promise<Job> {
     const response = await authReq.request<Job>({url: reqURL.href});
     let data: Job;
 
-    console.log(response)
-
     
     if (response.status === 200) {
         data = response.data;
@@ -102,9 +98,11 @@ export async function getJobStatus(jobID: string): Promise<Job> {
 // }
 
 export async function generateSignedDownloadUrl(filename: string): Promise<{filename: string, url: string}> {
+    let expDate: Date = new Date();
+    expDate.setHours(expDate.getHours() + 1);
     const options: gcs.GetSignedUrlConfig = {
         action: "read",
-        expires: 300,
+        expires: expDate,
     }
     const [url] = await storage.bucket(bucketName).file(filename).getSignedUrl(options);
     const fname = storage.bucket(bucketName).file(filename).metadata?.["original-filename"] ?? "";
